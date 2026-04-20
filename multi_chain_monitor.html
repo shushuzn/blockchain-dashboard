@@ -6,134 +6,260 @@
 <title>Multi-Chain Monitor + Alerts</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0e17; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 20px 24px; }
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-  h1 { font-size: 1.4rem; font-weight: 600; color: #818cf8; }
+  body { background: #0a0e17; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  .app { padding: 16px 20px; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  h1 { font-size: 1.3rem; font-weight: 600; color: #818cf8; }
   .header-right { display: flex; gap: 8px; align-items: center; }
-  .btn { padding: 6px 14px; border-radius: 7px; border: 1px solid #1f2937; background: #111827; color: #9ca3af; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+  .btn { padding: 5px 12px; border-radius: 6px; border: 1px solid #1f2937; background: #111827; color: #9ca3af; cursor: pointer; font-size: 0.78rem; transition: all 0.15s; }
   .btn:hover { border-color: #374151; color: #e2e8f0; }
+  .btn.active { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
   .btn-alert { border-color: #ef4444; color: #ef4444; }
   .btn-alert:hover { background: #1f0a0a; }
   .btn-alert.active { background: #7f1d1d; border-color: #ef4444; color: #fca5a5; }
-  .chain-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chain-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid #1f2937; background: #111827; color: #6b7280; cursor: pointer; font-size: 0.82rem; transition: all 0.2s; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #1f2937; padding-bottom: 0; }
+  .tab { padding: 7px 14px; border: none; background: none; color: #6b7280; cursor: pointer; font-size: 0.82rem; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+  .tab:hover { color: #9ca3af; }
+  .tab.active { color: #a5b4fc; border-bottom-color: #6366f1; }
+  .chain-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chain-tab { padding: 5px 12px; border-radius: 7px; border: 1px solid #1f2937; background: #111827; color: #6b7280; cursor: pointer; font-size: 0.78rem; }
   .chain-tab:hover { border-color: #374151; color: #9ca3af; }
   .chain-tab.active { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
-  .eth-price-banner { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
-  .eth-price-banner .label { font-size: 0.65rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
-  .eth-price-banner .price { font-size: 1rem; font-weight: 700; color: #fb923c; }
-  .eth-price-banner .change { font-size: 0.78rem; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
-  .card-label { font-size: 0.65rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-  .card-value { font-size: 1.5rem; font-weight: 700; }
-  .card-sub { font-size: 0.65rem; color: #4b5563; margin-top: 2px; }
+  .eth-banner { background: #0f172a; border: 1px solid #1e293b; border-radius: 9px; padding: 10px 16px; margin-bottom: 14px; display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+  .eth-banner .label { font-size: 0.62rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+  .eth-banner .price { font-size: 0.95rem; font-weight: 700; color: #fb923c; }
+  .eth-banner .change { font-size: 0.75rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .card { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 14px; }
+  .card-label { font-size: 0.62rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .card-value { font-size: 1.4rem; font-weight: 700; }
+  .card-sub { font-size: 0.62rem; color: #4b5563; margin-top: 2px; }
   .green { color: #10b981; } .red { color: #ef4444; } .yellow { color: #f59e0b; }
   .purple { color: #a78bfa; } .orange { color: #fb923c; } .cyan { color: #22d3ee; }
-  .chain-meta { font-size: 0.68rem; color: #4b5563; margin-bottom: 14px; }
-  .chain-color { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-  .progress-bar { height: 4px; background: #1f2937; border-radius: 2px; margin-top: 5px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
-  .footer { font-size: 0.62rem; color: #374151; margin-top: 18px; }
+  .chain-meta { font-size: 0.65rem; color: #4b5563; margin-bottom: 12px; }
+  .chain-color { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .progress-bar { height: 4px; background: #1f2937; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+  .footer { font-size: 0.6rem; color: #374151; margin-top: 16px; }
   .loading { opacity: 0.4; }
 
-  /* Alert Log */
-  .alert-log { background: #111827; border: 1px solid #1f2937; border-radius: 10px; margin-top: 16px; overflow: hidden; }
-  .alert-log-header { padding: 10px 16px; background: #0d1117; border-bottom: 1px solid #1f2937; font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
-  .alert-log-body { max-height: 160px; overflow-y: auto; }
-  .alert-item { padding: 8px 16px; font-size: 0.72rem; border-bottom: 1px solid #161b22; display: flex; gap: 12px; align-items: flex-start; }
+  /* Chart Tab */
+  .chart-container { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .chart-title { font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .chart-meta { font-size: 0.68rem; color: #4b5563; }
+  .chart-controls { display: flex; gap: 4px; }
+  .chart-range-btn { padding: 3px 8px; border-radius: 4px; border: 1px solid #1f2937; background: #0d1117; color: #6b7280; cursor: pointer; font-size: 0.68rem; }
+  .chart-range-btn:hover { border-color: #374151; color: #9ca3af; }
+  .chart-range-btn.active { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
+  .metric-toggles { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+  .metric-toggle { padding: 3px 8px; border-radius: 4px; border: 1px solid #1f2937; background: #0d1117; color: #6b7280; cursor: pointer; font-size: 0.68rem; }
+  .metric-toggle.active { border-color: #374151; color: #e2e8f0; }
+  .metric-toggle[data-metric="gas"].active { border-color: #10b981; color: #10b981; }
+  .metric-toggle[data-metric="baseFee"].active { border-color: #f59e0b; color: #f59e0b; }
+  .metric-toggle[data-metric="blobFee"].active { border-color: #a78bfa; color: #a78bfa; }
+  .metric-toggle[data-metric="util"].active { border-color: #22d3ee; color: #22d3ee; }
+  #chart { width: 100%; height: 220px; }
+  .no-data { text-align: center; color: #374151; font-size: 0.75rem; padding: 40px; }
+
+  /* Alert section */
+  .alert-log { background: #111827; border: 1px solid #1f2937; border-radius: 9px; overflow: hidden; margin-top: 14px; }
+  .alert-log-header { padding: 8px 14px; background: #0d1117; border-bottom: 1px solid #1f2937; font-size: 0.68rem; color: #6b7280; text-transform: uppercase; display: flex; justify-content: space-between; }
+  .alert-log-body { max-height: 130px; overflow-y: auto; }
+  .alert-item { padding: 7px 14px; font-size: 0.68rem; border-bottom: 1px solid #161b22; display: flex; gap: 10px; }
   .alert-item:last-child { border-bottom: none; }
-  .alert-time { color: #4b5563; min-width: 70px; }
-  .alert-chain { color: #6b7280; min-width: 70px; }
-  .alert-msg { color: #e2e8f0; flex: 1; }
+  .alert-time { color: #4b5563; min-width: 65px; }
+  .alert-chain { color: #6b7280; min-width: 65px; }
+  .alert-msg { color: #d1d5db; flex: 1; }
   .alert-msg .metric { color: #f87171; font-weight: 600; }
-  .alert-empty { padding: 16px; text-align: center; color: #374151; font-size: 0.72rem; }
+  .alert-empty { padding: 14px; text-align: center; color: #374151; font-size: 0.68rem; }
+  .alert-indicator { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
+  .alert-indicator.on { background: #3f0f0f; color: #f87171; border: 1px solid #7f1d1d; }
+  .alert-indicator.off { background: #0d1117; color: #374151; border: 1px solid #1f2937; }
 
   /* Modal */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-  .modal { background: #111827; border: 1px solid #1f2937; border-radius: 14px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
-  .modal-header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; }
-  .modal-title { font-size: 1rem; font-weight: 600; color: #e2e8f0; }
-  .modal-close { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1.2rem; padding: 4px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .modal { background: #111827; border: 1px solid #1f2937; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 14px 18px; border-bottom: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 0.95rem; font-weight: 600; }
+  .modal-close { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1.1rem; }
   .modal-close:hover { color: #e2e8f0; }
-  .modal-body { padding: 20px; }
-  .modal-section { margin-bottom: 24px; }
+  .modal-body { padding: 18px; }
+  .modal-section { margin-bottom: 20px; }
   .modal-section:last-child { margin-bottom: 0; }
-  .modal-section-title { font-size: 0.72rem; color: #818cf8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #1f2937; }
-  .form-row { margin-bottom: 12px; }
-  .form-label { font-size: 0.72rem; color: #9ca3af; margin-bottom: 4px; display: block; }
-  .form-input { width: 100%; padding: 7px 10px; background: #0d1117; border: 1px solid #1f2937; border-radius: 7px; color: #e2e8f0; font-size: 0.82rem; }
+  .modal-section-title { font-size: 0.68rem; color: #818cf8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #1f2937; }
+  .form-row { margin-bottom: 10px; }
+  .form-label { font-size: 0.68rem; color: #9ca3af; margin-bottom: 3px; display: block; }
+  .form-input { width: 100%; padding: 6px 9px; background: #0d1117; border: 1px solid #1f2937; border-radius: 6px; color: #e2e8f0; font-size: 0.78rem; }
   .form-input:focus { outline: none; border-color: #6366f1; }
   .form-input::placeholder { color: #374151; }
-  .form-hint { font-size: 0.65rem; color: #4b5563; margin-top: 3px; }
+  .form-hint { font-size: 0.62rem; color: #4b5563; margin-top: 2px; }
   .form-hint a { color: #6b7280; }
-  .form-row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .threshold-chain { margin-bottom: 14px; padding: 12px; background: #0d1117; border-radius: 8px; border: 1px solid #161b22; }
-  .threshold-chain-name { font-size: 0.75rem; color: #a5b4fc; margin-bottom: 8px; font-weight: 600; }
-  .threshold-row { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; margin-bottom: 6px; }
-  .threshold-row label { font-size: 0.68rem; color: #6b7280; }
-  .threshold-row input { padding: 4px 8px; background: #111827; border: 1px solid #1f2937; border-radius: 5px; color: #e2e8f0; font-size: 0.75rem; width: 80px; }
+  .form-row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .threshold-chain { margin-bottom: 10px; padding: 10px; background: #0d1117; border-radius: 7px; border: 1px solid #161b22; }
+  .threshold-chain-name { font-size: 0.72rem; color: #a5b4fc; margin-bottom: 7px; font-weight: 600; }
+  .threshold-row { display: grid; grid-template-columns: 1fr 80px; gap: 7px; align-items: center; margin-bottom: 5px; }
+  .threshold-row label { font-size: 0.65rem; color: #6b7280; }
+  .threshold-row input { padding: 3px 7px; background: #111827; border: 1px solid #1f2937; border-radius: 4px; color: #e2e8f0; font-size: 0.72rem; width: 75px; }
   .threshold-row input:focus { outline: none; border-color: #6366f1; }
   .cooldown-row { display: flex; align-items: center; gap: 8px; }
-  .cooldown-row input { width: 60px !important; }
-  .modal-footer { padding: 14px 20px; border-top: 1px solid #1f2937; display: flex; justify-content: space-between; gap: 10px; }
+  .modal-footer { padding: 12px 18px; border-top: 1px solid #1f2937; display: flex; justify-content: space-between; gap: 8px; }
   .btn-secondary { background: #0d1117; }
   .btn-primary { background: #3730a3; border-color: #4f46e5; color: #e0e7ff; }
   .btn-primary:hover { background: #4338ca; }
   .btn-danger { background: #7f1d1d; border-color: #b91c1c; color: #fca5a5; }
   .btn-danger:hover { background: #991b1b; }
-  .alert-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; padding: 3px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
-  .alert-indicator.on { background: #3f0f0f; color: #f87171; border: 1px solid #7f1d1d; }
-  .alert-indicator.off { background: #0d1117; color: #374151; border: 1px solid #1f2937; }
+
+  /* Storage info */
+  .storage-bar { background: #0d1117; border: 1px solid #161b22; border-radius: 6px; padding: 8px 12px; margin-top: 12px; }
+  .storage-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .storage-row:last-child { margin-bottom: 0; }
+  .storage-label { font-size: 0.65rem; color: #6b7280; }
+  .storage-value { font-size: 0.65rem; color: #9ca3af; }
+  .storage-meter { height: 4px; background: #1f2937; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .storage-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.3s; }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>Multi-Chain Monitor</h1>
-  <div class="header-right">
-    <span class="alert-indicator off" id="alertIndicator">🔔 Alerts Off</span>
-    <button class="btn btn-alert" id="alertBtn" onclick="openAlertModal()">🔔 Alerts</button>
-    <button class="btn" onclick="openSettingsModal()">⚙</button>
+<div class="app">
+  <div class="header">
+    <h1>Multi-Chain Monitor</h1>
+    <div class="header-right">
+      <span class="alert-indicator off" id="alertIndicator">🔔 Alerts Off</span>
+      <button class="btn btn-alert" id="alertBtn" onclick="openAlertModal()">🔔 Alerts</button>
+      <button class="btn" onclick="openSettingsModal()">⚙</button>
+    </div>
   </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchView('monitor')" id="tab-monitor">Monitor</button>
+    <button class="tab" onclick="switchView('charts')" id="tab-charts">Charts</button>
+  </div>
+
+  <!-- Monitor View -->
+  <div id="view-monitor">
+    <div class="chain-tabs" id="tabs"></div>
+    <div class="eth-banner">
+      <div><div class="label">ETH</div><div class="price" id="ethPrice">--</div></div>
+      <div><div class="label">24h</div><div class="change green" id="ethChange">--</div></div>
+      <div><div class="label">BTC</div><div class="price" id="btcPrice">--</div></div>
+      <div><div class="label">Updated</div><div id="updated" style="font-size:0.75rem;color:#6b7280">--</div></div>
+    </div>
+    <div id="dashboard"></div>
+    <div class="alert-log" id="alertLog">
+      <div class="alert-log-header">
+        <span>📋 Alert History</span>
+        <span id="alertCount">0 alerts</span>
+      </div>
+      <div class="alert-log-body" id="alertLogBody">
+        <div class="alert-empty">No alerts yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts View -->
+  <div id="view-charts" hidden>
+    <div class="chain-tabs" id="chartTabs"></div>
+    <div class="metric-toggles">
+      <button class="metric-toggle active" data-metric="gas" onclick="toggleMetric('gas')">⛽ Priority Fee</button>
+      <button class="metric-toggle active" data-metric="baseFee" onclick="toggleMetric('baseFee')">📊 Base Fee</button>
+      <button class="metric-toggle" data-metric="blobFee" onclick="toggleMetric('blobFee')" id="blobToggle" hidden>🟣 Blob Fee</button>
+      <button class="metric-toggle active" data-metric="util" onclick="toggleMetric('util')">📈 Gas Util</button>
+    </div>
+    <div class="chart-controls" style="margin-bottom:10px;display:flex;gap:4px;align-items:center;">
+      <span style="font-size:0.65rem;color:#4b5563;margin-right:4px;">Range:</span>
+      <button class="chart-range-btn active" onclick="setChartRange(1)" data-range="1">24h</button>
+      <button class="chart-range-btn" onclick="setChartRange(3)" data-range="3">3d</button>
+      <button class="chart-range-btn" onclick="setChartRange(7)" data-range="7">7d</button>
+      <span style="margin-left:auto;font-size:0.65rem;color:#4b5563;" id="dataPointsInfo"></span>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title" id="chartTitle">Priority Fee & Base Fee — Ethereum</span>
+        <span class="chart-meta" id="chartMeta"></span>
+      </div>
+      <div id="chart"></div>
+    </div>
+    <div class="storage-bar" id="storageBar">
+      <div class="storage-row">
+        <span class="storage-label">History stored</span>
+        <span class="storage-value" id="storageUsed">--</span>
+      </div>
+      <div class="storage-meter"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="footer">Auto-refreshes every 15s &middot; Charts sampled every 15min &middot; ETH/BTC via CoinGecko</div>
 </div>
 
-<div class="chain-tabs" id="tabs"></div>
-
-<div class="eth-price-banner">
-  <div><div class="label">ETH</div><div class="price" id="ethPrice">--</div></div>
-  <div><div class="label">24h</div><div class="change green" id="ethChange">--</div></div>
-  <div><div class="label">BTC</div><div class="price" id="btcPrice">--</div></div>
-  <div><div class="label">Updated</div><div id="updated" style="font-size:0.78rem;color:#6b7280">--</div></div>
-</div>
-
-<div id="dashboard"></div>
-
-<div class="alert-log" id="alertLog">
-  <div class="alert-log-header">
-    <span>📋 Alert History</span>
-    <span id="alertCount">0 alerts</span>
+<!-- Alert Modal -->
+<div class="modal-overlay" id="alertModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">🔔 Alert Configuration</span><button class="modal-close" onclick="closeAlertModal()">×</button></div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">Status</div>
+        <div class="form-row" style="display:flex;align-items:center;gap:10px;">
+          <label style="font-size:0.78rem;color:#9ca3af">Enable Alerts</label>
+          <label style="position:relative;cursor:pointer;">
+            <input type="checkbox" id="alertEnabled" onchange="updateAlertToggle()" style="display:none;">
+            <span id="toggleTrack" style="display:inline-block;width:34px;height:18px;background:#1f2937;border-radius:9px;transition:all 0.2s;position:relative;">
+              <span id="toggleThumb" style="display:inline-block;width:14px;height:14px;background:#6b7280;border-radius:50%;position:absolute;top:2px;left:2px;transition:all 0.2s;"></span>
+            </span>
+          </label>
+          <span id="toggleLabel" style="font-size:0.68rem;color:#6b7280;">Disabled</span>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Telegram</div>
+        <div class="form-row"><label class="form-label">Bot Token</label><input class="form-input" id="telegramToken" placeholder="123456789:ABCdef..."><div class="form-hint">via <a href="https://t.me/BotFather" target="_blank">@BotFather</a></div></div>
+        <div class="form-row"><label class="form-label">Chat ID</label><input class="form-input" id="telegramChatId" placeholder="123456789"><div class="form-hint">via <a href="https://t.me/userid_inline_bot" target="_blank">@userid_inline_bot</a></div></div>
+        <div class="form-row"><button class="btn" style="font-size:0.7rem;" onclick="testTelegram()">Send Test</button><span id="telegramStatus" style="font-size:0.68rem;margin-left:8px;color:#4b5563;"></span></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Email (SMTP)</div>
+        <div class="form-row form-row-inline">
+          <div><label class="form-label">SMTP Host</label><input class="form-input" id="smtpHost" placeholder="smtp.gmail.com"></div>
+          <div><label class="form-label">Port</label><input class="form-input" id="smtpPort" placeholder="587"></div>
+        </div>
+        <div class="form-row"><label class="form-label">Username</label><input class="form-input" id="smtpUser" placeholder="your@gmail.com"></div>
+        <div class="form-row"><label class="form-label">App Password</label><input class="form-input" id="smtpPass" type="password" placeholder="xxxx xxxx xxxx xxxx"><div class="form-hint">Gmail: Account → Security → 2FA → App Passwords</div></div>
+        <div class="form-row"><label class="form-label">To</label><input class="form-input" id="smtpTo" placeholder="alert@example.com"></div>
+        <div class="form-row"><button class="btn" style="font-size:0.7rem;" onclick="testEmail()">Send Test</button><span id="emailStatus" style="font-size:0.68rem;margin-left:8px;color:#4b5563;"></span></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Thresholds & Cooldown</div>
+        <div class="form-row">
+          <label class="form-label">Cooldown (minutes) — same metric, same chain</label>
+          <input class="form-input" id="cooldownMin" type="number" min="1" max="1440" value="5" style="width:70px;">
+        </div>
+        <div id="thresholdChains"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="clearAlertLog()">Clear Log</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="closeAlertModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAlertConfig()">Save</button>
+      </div>
+    </div>
   </div>
-  <div class="alert-log-body" id="alertLogBody">
-    <div class="alert-empty">No alerts yet</div>
-  </div>
 </div>
-
-<div class="footer">Auto-refreshes every 15s &middot; Alerts via Telegram or SMTP Email</div>
 
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal" style="display:none">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">⚙ Settings</span>
-      <button class="modal-close" onclick="closeSettingsModal()">×</button>
-    </div>
+    <div class="modal-header"><span class="modal-title">⚙ Settings</span><button class="modal-close" onclick="closeSettingsModal()">×</button></div>
     <div class="modal-body">
       <div class="modal-section">
         <div class="modal-section-title">Refresh</div>
-        <div class="form-row">
-          <label class="form-label">Refresh Interval (seconds)</label>
-          <input class="form-input" id="settingInterval" type="number" min="5" max="300" value="15" placeholder="15">
-        </div>
+        <div class="form-row"><label class="form-label">Refresh Interval (seconds)</label><input class="form-input" id="settingInterval" type="number" min="5" max="300" value="15"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Chart Sampling</div>
+        <div class="form-row"><label class="form-label">Sample every N minutes (lower = more data, more storage)</label>
+          <input class="form-input" id="settingSampleMin" type="number" min="1" max="60" value="15"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -143,133 +269,38 @@
   </div>
 </div>
 
-<!-- Alert Config Modal -->
-<div class="modal-overlay" id="alertModal" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">🔔 Alert Configuration</span>
-      <button class="modal-close" onclick="closeAlertModal()">×</button>
-    </div>
-    <div class="modal-body">
-
-      <!-- Enable Toggle -->
-      <div class="modal-section">
-        <div class="modal-section-title">Status</div>
-        <div class="form-row" style="display:flex;align-items:center;gap:12px;">
-          <label style="font-size:0.8rem;color:#9ca3af">Enable Alerts</label>
-          <label class="toggle" style="position:relative;cursor:pointer;">
-            <input type="checkbox" id="alertEnabled" onchange="updateAlertToggle()" style="display:none;">
-            <span id="toggleTrack" style="display:inline-block;width:36px;height:20px;background:#1f2937;border-radius:10px;transition:all 0.2s;position:relative;">
-              <span id="toggleThumb" style="display:inline-block;width:16px;height:16px;background:#6b7280;border-radius:50%;position:absolute;top:2px;left:2px;transition:all 0.2s;"></span>
-            </span>
-          </label>
-          <span id="toggleLabel" style="font-size:0.72rem;color:#6b7280;">Disabled</span>
-        </div>
-      </div>
-
-      <!-- Telegram -->
-      <div class="modal-section">
-        <div class="modal-section-title">Telegram</div>
-        <div class="form-row">
-          <label class="form-label">Bot Token</label>
-          <input class="form-input" id="telegramToken" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ">
-          <div class="form-hint">Create a bot via <a href="https://t.me/BotFather" target="_blank">@BotFather</a>, paste token here</div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Chat ID</label>
-          <input class="form-input" id="telegramChatId" placeholder="123456789">
-          <div class="form-hint">DM <a href="https://t.me/userid_inline_bot" target="_blank">@userid_inline_bot</a> to get your Chat ID</div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Test Channel</label>
-          <button class="btn" style="font-size:0.72rem;" onclick="testTelegram()">Send Test Message</button>
-          <span id="telegramStatus" style="font-size:0.7rem;margin-left:8px;color:#4b5563;"></span>
-        </div>
-      </div>
-
-      <!-- Email -->
-      <div class="modal-section">
-        <div class="modal-section-title">Email (SMTP)</div>
-        <div class="form-row form-row-inline">
-          <div>
-            <label class="form-label">SMTP Host</label>
-            <input class="form-input" id="smtpHost" placeholder="smtp.gmail.com">
-          </div>
-          <div>
-            <label class="form-label">Port</label>
-            <input class="form-input" id="smtpPort" placeholder="587">
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Username / Email</label>
-          <input class="form-input" id="smtpUser" placeholder="your@gmail.com">
-        </div>
-        <div class="form-row">
-          <label class="form-label">App Password</label>
-          <input class="form-input" id="smtpPass" type="password" placeholder="xxxx xxxx xxxx xxxx">
-          <div class="form-hint">Gmail: Account → Security → 2FA → App Passwords</div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">To Email</label>
-          <input class="form-input" id="smtpTo" placeholder="alert@example.com">
-        </div>
-        <div class="form-row">
-          <label class="form-label">Test Email</label>
-          <button class="btn" style="font-size:0.72rem;" onclick="testEmail()">Send Test Email</button>
-          <span id="emailStatus" style="font-size:0.7rem;margin-left:8px;color:#4b5563;"></span>
-        </div>
-      </div>
-
-      <!-- Thresholds -->
-      <div class="modal-section">
-        <div class="modal-section-title">Thresholds (per chain)</div>
-        <div class="form-row">
-          <label class="form-label">Cooldown (minutes) — prevent spam</label>
-          <div class="cooldown-row">
-            <input class="form-input" id="cooldownMin" type="number" min="1" max="1440" value="5" style="width:70px;">
-            <span style="font-size:0.7rem;color:#4b5563;">minutes before re-alerting same metric</span>
-          </div>
-        </div>
-        <div id="thresholdChains"></div>
-      </div>
-
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" onclick="clearAlertLog()">Clear Log</button>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary" onclick="closeAlertModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveAlertConfig()">Save Alerts</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
-// ─── Chain Registry ───────────────────────────────────────────────────────────
+// ─── Chains ──────────────────────────────────────────────────────────────────
 const CHAINS = [
-  { id: 'ethereum',  name: 'Ethereum',   color: '#627eea', rpc: 'https://eth.llamarpc.com',     explorer: 'https://etherscan.io',            decimals: 18, hasBlob: true },
-  { id: 'base',      name: 'Base',        color: '#0052ff', rpc: 'https://mainnet.base.org',      explorer: 'https://basescan.org',            decimals: 18, hasBlob: true },
-  { id: 'arbitrum',  name: 'Arbitrum',    color: '#28a0f0', rpc: 'https://arb1.arbitrum.io/rpc', explorer: 'https://arbiscan.io',              decimals: 18, hasBlob: false },
-  { id: 'optimism',  name: 'Optimism',    color: '#ff0420', rpc: 'https://mainnet.optimism.io',  explorer: 'https://optimistic.etherscan.io', decimals: 18, hasBlob: false },
+  { id: 'ethereum',  name: 'Ethereum',   color: '#627eea', rpc: 'https://eth.llamarpc.com',       explorer: 'https://etherscan.io',            decimals: 18, hasBlob: true },
+  { id: 'base',      name: 'Base',        color: '#0052ff', rpc: 'https://mainnet.base.org',        explorer: 'https://basescan.org',            decimals: 18, hasBlob: true },
+  { id: 'arbitrum',  name: 'Arbitrum',    color: '#28a0f0', rpc: 'https://arb1.arbitrum.io/rpc',   explorer: 'https://arbiscan.io',            decimals: 18, hasBlob: false },
+  { id: 'optimism',  name: 'Optimism',    color: '#ff0420', rpc: 'https://mainnet.optimism.io',    explorer: 'https://optimistic.etherscan.io', decimals: 18, hasBlob: false },
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
-let activeChain = 'ethereum';
-let ethPrice = null;
+let activeChain  = 'ethereum';
+let activeChart  = 'ethereum';
+let currentView  = 'monitor';
+let ethPrice     = null;
 let refreshInterval = 15000;
-let alertTimer = null;
+let sampleInterval   = 15;  // minutes
+let alertTimer      = null;
+let chartInstance   = null;
+let chartRange      = 1;   // days
+let activeMetrics   = { gas: true, baseFee: true, blobFee: false, util: true };
 
-// ─── Config ─────────────────────────────────────────────────────────────────
+// ─── Storage ─────────────────────────────────────────────────────────────────
+const HISTORY_KEY  = 'mcm_history_v2';
+const CONFIG_KEY   = 'mcm_config_v3';
+const ALERT_STATE_KEY = 'mcm_alert_state_v2';
+const MAX_BYTES   = 4 * 1024 * 1024; // 4MB soft limit
+
 const DEFAULT_CONFIG = {
   alertEnabled: false,
-  telegramToken: '',
-  telegramChatId: '',
-  smtpHost: 'smtp.gmail.com',
-  smtpPort: '587',
-  smtpUser: '',
-  smtpPass: '',
-  smtpTo: '',
+  telegramToken: '', telegramChatId: '',
+  smtpHost: 'smtp.gmail.com', smtpPort: '587', smtpUser: '', smtpPass: '', smtpTo: '',
   cooldownMin: 5,
   thresholds: {
     ethereum: { gas: 50, baseFee: 50, blobFee: 0.1 },
@@ -277,36 +308,116 @@ const DEFAULT_CONFIG = {
     arbitrum:  { gas: 5,  baseFee: 5,  blobFee: 0 },
     optimism:  { gas: 5,  baseFee: 5,  blobFee: 0 },
   },
-  alertLog: [],   // { time, chain, metric, value, threshold }
+  alertLog: [],
 };
 
-let config = { ...DEFAULT_CONFIG, thresholds: { ...DEFAULT_CONFIG.thresholds, ethereum: {...DEFAULT_CONFIG.thresholds.ethereum}, base: {...DEFAULT_CONFIG.thresholds.base}, arbitrum: {...DEFAULT_CONFIG.thresholds.arbitrum}, optimism: {...DEFAULT_CONFIG.thresholds.optimism} } };
+let config = {};
+let alertState = {};
+let history = {};  // { chainId: [{ t, gas, baseFee, blobFee, util }] }
 
 function loadConfig() {
   try {
-    const saved = localStorage.getItem('mcm_config_v2');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      config = {
-        ...DEFAULT_CONFIG,
-        ...parsed,
-        thresholds: {
-          ...DEFAULT_CONFIG.thresholds,
-          ...(parsed.thresholds || {}),
-        }
-      };
-      // Ensure each chain has all threshold keys
-      CHAINS.forEach(c => {
-        config.thresholds[c.id] = { ...DEFAULT_CONFIG.thresholds[c.id], ...config.thresholds[c.id] };
-      });
-    }
-  } catch(e) {}
-}
-function saveConfig() {
-  try { localStorage.setItem('mcm_config_v2', JSON.stringify(config)); } catch(e) {}
+    const s = localStorage.getItem(CONFIG_KEY);
+    if (s) {
+      const p = JSON.parse(s);
+      config = { ...DEFAULT_CONFIG, ...p, thresholds: { ...DEFAULT_CONFIG.thresholds, ...(p.thresholds || {}) } };
+      CHAINS.forEach(c => { config.thresholds[c.id] = { ...DEFAULT_CONFIG.thresholds[c.id], ...config.thresholds[c.id] }; });
+    } else { config = { ...DEFAULT_CONFIG }; }
+  } catch(e) { config = { ...DEFAULT_CONFIG }; }
 }
 
-// ─── RPC Helper ─────────────────────────────────────────────────────────────
+function saveConfig() {
+  try {
+    const d = JSON.stringify(config);
+    if (d.length > MAX_BYTES) d3 = d.slice(0, MAX_BYTES);
+    localStorage.setItem(CONFIG_KEY, d);
+  } catch(e) {}
+}
+
+function loadHistory() {
+  try {
+    const s = localStorage.getItem(HISTORY_KEY);
+    if (s) {
+      history = JSON.parse(s);
+      CHAINS.forEach(c => { if (!history[c.id]) history[c.id] = []; });
+    } else { CHAINS.forEach(c => { history[c.id] = []; }); }
+  } catch(e) { CHAINS.forEach(c => { history[c.id] = []; }); }
+}
+
+function trimHistory(chainId) {
+  // Keep enough data for 7 days + buffer
+  const maxPoints = Math.floor((7 * 24 * 60) / sampleInterval) + 20;
+  if (history[chainId].length > maxPoints) {
+    history[chainId] = history[chainId].slice(-maxPoints);
+  }
+}
+
+function addHistoryPoint(chainId, point) {
+  if (!history[chainId]) history[chainId] = [];
+  const arr = history[chainId];
+  // Deduplicate by timestamp bucket (avoid double entries on same sample minute)
+  const bucket = Math.floor(point.t / (sampleInterval * 60 * 1000)) * (sampleInterval * 60 * 1000);
+  const existing = arr.findIndex(p => Math.floor(p.t / (sampleInterval * 60 * 1000)) * (sampleInterval * 60 * 1000) === bucket);
+  if (existing >= 0) {
+    arr[existing] = point;
+  } else {
+    arr.push(point);
+    trimHistory(chainId);
+  }
+  persistHistory();
+}
+
+function persistHistory() {
+  try {
+    const d = JSON.stringify(history);
+    if (d.length > MAX_BYTES) {
+      // Drop oldest chain data until it fits
+      const chainIds = Object.keys(history).sort((a,b) => {
+        const aOld = history[a][0]?.t || 0;
+        const bOld = history[b][0]?.t || 0;
+        return aOld - bOld;
+      });
+      for (const cid of chainIds) {
+        history[cid] = history[cid].slice(Math.ceil(history[cid].length * 0.2));
+        const d2 = JSON.stringify(history);
+        if (d2.length <= MAX_BYTES * 0.9) break;
+      }
+    }
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch(e) {
+    // localStorage full — drop oldest 30% of all chains
+    CHAINS.forEach(c => { if (history[c.id]) history[c.id] = history[c.id].slice(Math.ceil(history[c.id].length * 0.3)); });
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch(e2) {}
+  }
+}
+
+function loadAlertState() {
+  try { alertState = JSON.parse(localStorage.getItem(ALERT_STATE_KEY)) || {}; } catch(e) { alertState = {}; }
+}
+function saveAlertState() {
+  try { localStorage.setItem(ALERT_STATE_KEY, JSON.stringify(alertState)); } catch(e) {}
+}
+
+function getStorageUsage() {
+  let total = 0;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('mcm_')) {
+      try { total += localStorage.getItem(k).length * 2; } catch(e) {}
+    }
+  }
+  return total;
+}
+
+function updateStorageBar() {
+  const used = getStorageUsage();
+  const mb = (used / 1024 / 1024).toFixed(2);
+  document.getElementById('storageUsed').textContent = mb + ' MB / 5 MB';
+  document.getElementById('storageFill').style.width = Math.min(100, (used / (5 * 1024 * 1024) * 100)) + '%';
+  const chainPts = history[activeChart] || [];
+  document.getElementById('dataPointsInfo').textContent = chainPts.length + ' data points';
+}
+
+// ─── RPC ─────────────────────────────────────────────────────────────────────
 async function rpcCall(chain, method, params = []) {
   try {
     const r = await fetch(chain.rpc, {
@@ -317,7 +428,7 @@ async function rpcCall(chain, method, params = []) {
   } catch(e) { return null; }
 }
 
-// ─── Price ────────────────────────────────────────────────────────────────────
+// ─── Price ───────────────────────────────────────────────────────────────────
 async function fetchPrice() {
   try {
     const d = await fetch(
@@ -346,14 +457,13 @@ async function fetchChainData(chain) {
   const ts      = parseInt(block.timestamp, 16);
   const gasUsed = parseInt(block.gasUsed, 16);
   const gasLimit= parseInt(block.gasLimit, 16);
-  const utilPct = (gasUsed / gasLimit * 100).toFixed(1);
+  const utilPct = (gasUsed / gasLimit * 100);
   const txs     = block.transactions.length;
-
-  const bfArr = feeHistory ? feeHistory.baseFeePerGas : [];
+  const bfArr   = feeHistory ? feeHistory.baseFeePerGas : [];
   const baseFee = bfArr.length ? parseInt(bfArr[bfArr.length - 1], 16) / 1e9 : 0;
 
   let priorityFee = 0;
-  if (feeHistory && feeHistory.reward) {
+  if (feeHistory?.reward) {
     const rw = feeHistory.reward.map(r => parseInt(r, 16) / 1e9).filter(r => r > 0);
     if (rw.length) priorityFee = rw.reduce((a, b) => a + b, 0) / rw.length;
   }
@@ -362,7 +472,7 @@ async function fetchChainData(chain) {
   if (chain.hasBlob) {
     try {
       const bfr = await rpcCall(chain, 'eth_getBlobPrice', []);
-      blobFee = bfr ? parseInt(bfr, 16) / 1e9 : null;
+      if (bfr) blobFee = parseInt(bfr, 16) / 1e9;
     } catch(e) {}
   }
 
@@ -371,11 +481,11 @@ async function fetchChainData(chain) {
 
   return {
     block: bNum, blockFmt: bNum.toLocaleString(),
-    blockSub: `${txs} txs · ${utilPct}% gas · ${new Date(ts * 1000).toLocaleTimeString()}`,
+    blockSub: `${txs} txs · ${utilPct.toFixed(1)}% gas · ${new Date(ts * 1000).toLocaleTimeString()}`,
     gas: priorityFee, gasFmt: priorityFee.toFixed(3),
     baseFee, baseFeeFmt: baseFee.toFixed(3),
-    blobFee, blobFeeFmt: blobFee !== null ? blobFee.toFixed(4) : 'N/A',
-    utilPct: parseFloat(utilPct),
+    blobFee: blobFee, blobFeeFmt: blobFee !== null ? blobFee.toFixed(4) : 'N/A',
+    utilPct, utilPctFmt: utilPct.toFixed(1),
     supply: (totalSupply / 1e6).toFixed(2) + 'M',
     mcap,
   };
@@ -384,51 +494,25 @@ async function fetchChainData(chain) {
 // ─── Render ──────────────────────────────────────────────────────────────────
 function renderDashboard(chain, data) {
   const c = CHAINS.find(ch => ch.id === chain);
+  const th = config.thresholds[chain] || {};
   const blobCard = c.hasBlob && data.blobFee !== null ? `
-    <div class="card">
-      <div class="card-label">Blob Fee</div>
-      <div class="card-value purple">${data.blobFeeFmt}</div>
+    <div class="card" style="${data.blobFee > th.blobFee ? 'border-color:#ef4444;' : ''}">
+      <div class="card-label">Blob Fee</div><div class="card-value purple">${data.blobFeeFmt}</div>
       <div class="card-sub">gwei · EIP-4844</div>
     </div>` : '';
-  const blobCardAlert = c.hasBlob && data.blobFee !== null && data.blobFee > config.thresholds[chain.id].blobFee ? 'border-color:#ef4444;' : '';
-
   const utilColor = data.utilPct > 80 ? 'red' : data.utilPct > 50 ? 'yellow' : 'green';
-  const baseFeeColor = data.baseFee > config.thresholds[chain.id].baseFee ? 'red' : data.baseFee > 20 ? 'yellow' : 'green';
-  const gasColor = data.gas > config.thresholds[chain.id].gas ? 'red' : data.gas > 20 ? 'yellow' : 'green';
+  const baseFeeColor = data.baseFee > th.baseFee ? 'red' : data.baseFee > 20 ? 'yellow' : 'green';
+  const gasColor = data.gas > th.gas ? 'red' : data.gas > 20 ? 'yellow' : 'green';
 
-  return `<div class="chain-meta"><span class="chain-color" style="background:${c.color}"></span>${c.name} · <a href="${c.explorer}" style="color:#4b5563;text-decoration:none" target="_blank">${c.explorer.replace('https://','')}</a></div>
+  return `<div class="chain-meta"><span class="chain-color" style="background:${c.color}"></span>${c.name}</div>
   <div class="grid">
-    <div class="card">
-      <div class="card-label">Latest Block</div>
-      <div class="card-value cyan">${data.blockFmt}</div>
-      <div class="card-sub">${data.blockSub}</div>
-    </div>
-    <div class="card" style="${data.gas > config.thresholds[chain.id].gas ? 'border-color:#ef4444;' : ''}">
-      <div class="card-label">Priority Fee</div>
-      <div class="card-value ${gasColor}">${data.gasFmt}</div>
-      <div class="card-sub">gwei · low</div>
-    </div>
-    <div class="card" style="${data.baseFee > config.thresholds[chain.id].baseFee ? 'border-color:#ef4444;' : ''}">
-      <div class="card-label">Base Fee</div>
-      <div class="card-value ${baseFeeColor}">${data.baseFeeFmt}</div>
-      <div class="card-sub">gwei</div>
-    </div>
-    ${blobCard ? `<div class="card" style="${blobCardAlert}">${blobCard}</div>` : ''}
-    <div class="card">
-      <div class="card-label">Gas Util</div>
-      <div class="card-value ${utilColor}">${data.utilPct.toFixed(1)}%</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${data.utilPct}%;background:${utilColor==='red'?'#ef4444':utilColor==='yellow'?'#f59e0b':'#10b981'}"></div></div>
-    </div>
-    <div class="card">
-      <div class="card-label">ETH Supply</div>
-      <div class="card-value cyan">${data.supply}</div>
-      <div class="card-sub">million ETH</div>
-    </div>
-    <div class="card">
-      <div class="card-label">ETH Market Cap</div>
-      <div class="card-value orange">${data.mcap}</div>
-      <div class="card-sub">@ ETH price</div>
-    </div>
+    <div class="card"><div class="card-label">Latest Block</div><div class="card-value cyan">${data.blockFmt}</div><div class="card-sub">${data.blockSub}</div></div>
+    <div class="card" style="${data.gas > th.gas ? 'border-color:#ef4444;' : ''}"><div class="card-label">Priority Fee</div><div class="card-value ${gasColor}">${data.gasFmt}</div><div class="card-sub">gwei · low</div></div>
+    <div class="card" style="${data.baseFee > th.baseFee ? 'border-color:#ef4444;' : ''}"><div class="card-label">Base Fee</div><div class="card-value ${baseFeeColor}">${data.baseFeeFmt}</div><div class="card-sub">gwei</div></div>
+    ${blobCard}
+    <div class="card"><div class="card-label">Gas Util</div><div class="card-value ${utilColor}">${data.utilPctFmt}%</div><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,data.utilPct)}%;background:${utilColor==='red'?'#ef4444':utilColor==='yellow'?'#f59e0b':'#10b981'}"></div></div></div>
+    <div class="card"><div class="card-label">ETH Supply</div><div class="card-value cyan">${data.supply}</div><div class="card-sub">million ETH</div></div>
+    <div class="card"><div class="card-label">ETH Market Cap</div><div class="card-value orange">${data.mcap}</div><div class="card-sub">@ ETH price</div></div>
   </div>`;
 }
 
@@ -437,29 +521,17 @@ function renderLoading() {
 }
 
 function renderTabs(chain) {
-  document.getElementById('tabs').innerHTML = CHAINS.map(c =>
-    `<button class="chain-tab${c.id === chain ? ' active' : ''}" onclick="switchChain('${c.id}')">${c.name}</button>`
-  ).join('');
+  const html = CHAINS.map(c => `<button class="chain-tab${c.id === chain ? ' active' : ''}" onclick="switchChain('${c.id}')">${c.name}</button>`).join('');
+  document.getElementById('tabs').innerHTML = html;
+  document.getElementById('chartTabs').innerHTML = html;
 }
 
-// ─── Alert System ────────────────────────────────────────────────────────────
-const ALERT_STATE_KEY = 'mcm_alert_state_v1';
-// alertState: { chainId_metric: lastAlertTimestamp }
-let alertState = {};
-
-function loadAlertState() {
-  try { alertState = JSON.parse(localStorage.getItem(ALERT_STATE_KEY)) || {}; } catch(e) { alertState = {}; }
-}
-function saveAlertState() {
-  try { localStorage.setItem(ALERT_STATE_KEY, JSON.stringify(alertState)); } catch(e) {}
-}
-
+// ─── Alerts ─────────────────────────────────────────────────────────────────
 async function sendTelegram(msg) {
   if (!config.telegramToken || !config.telegramChatId) return;
   try {
     await fetch(`https://api.telegram.org/bot${config.telegramToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: config.telegramChatId, text: msg, parse_mode: 'HTML' })
     });
   } catch(e) {}
@@ -468,61 +540,41 @@ async function sendTelegram(msg) {
 async function sendEmail(subject, body) {
   if (!config.smtpUser || !config.smtpPass || !config.smtpTo) return;
   try {
-    // SMTP.js approach — load dynamically
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'https://smtpjs.com/v3/smtp.js?' + Date.now();
-      s.onload = resolve;
-      s.onerror = reject;
+      s.src = 'https://smtpjs.com/v3/smtp.js';
+      s.onload = resolve; s.onerror = reject;
       document.head.appendChild(s);
     });
-    const msg = { To: config.smtpTo, From: config.smtpUser, Subject: subject, Body: body.replace(/\n/g, '<br>') };
-    await new Promise((resolve, reject) => {
-      // SMTPJS is loaded globally as Email
-      if (window.Email && window.Email.send) {
-        Email.send({ Host: config.smtpHost + ':' + config.smtpPort, Username: config.smtpUser, Password: config.smtpPass, To: msg.To, From: msg.From, Subject: msg.Subject, Body: msg.Body, tls: true })
-          .then(resolve).catch(reject);
-      } else {
-        reject(new Error('SMTPJS not loaded'));
-      }
+    await Email.send({
+      Host: config.smtpHost + ':' + config.smtpPort,
+      Username: config.smtpUser, Password: config.smtpPass,
+      To: config.smtpTo, From: config.smtpUser,
+      Subject: subject, Body: body.replace(/\n/g, '<br>'), tls: true
     });
-  } catch(e) { console.warn('Email send failed:', e); }
+  } catch(e) { console.warn('Email failed:', e); }
 }
 
 async function triggerAlert(chain, metric, value, threshold) {
   if (!config.alertEnabled) return;
-
   const now = Date.now();
   const key = `${chain}_${metric}`;
-  const cooldownMs = config.cooldownMin * 60 * 1000;
-
+  const cooldownMs = (config.cooldownMin || 5) * 60 * 1000;
   if (alertState[key] && (now - alertState[key]) < cooldownMs) return;
   alertState[key] = now;
   saveAlertState();
 
+  const names = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' };
+  const emojis = { gas: '⛽', baseFee: '📊', blobFee: '🟣' };
   const chainName = CHAINS.find(c => c.id === chain)?.name || chain;
-  const metricNames = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' };
-  const emoji = metric === 'gas' ? '⛽' : metric === 'baseFee' ? '📊' : '🟣';
-  const msg = `${emoji} <b>${chainName} Alert</b>\n${metricNames[metric]}: <b>${value}</b> > threshold ${threshold}`;
-
-  await Promise.all([
-    sendTelegram(msg),
-    sendEmail(`[MCM] ${chainName} ${metricNames[metric]} Alert`, `${chainName} ${metricNames[metric]} is ${value} (threshold: ${threshold})`),
-  ]);
-
+  const msg = `${emojis[metric]} <b>${chainName} Alert</b>\n${names[metric]}: <b>${typeof value === 'number' ? value.toFixed(3) : value}</b> > threshold ${threshold}`;
+  await Promise.all([sendTelegram(msg), sendEmail(`[MCM] ${chainName} ${names[metric]} Alert`, `${chainName} ${names[metric]} is ${value} (threshold: ${threshold})`)]);
   addAlertLog(chain, metric, value, threshold);
 }
 
 function addAlertLog(chain, metric, value, threshold) {
-  const metricNames = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' };
-  const logEntry = {
-    time: new Date().toLocaleTimeString(),
-    chain: CHAINS.find(c => c.id === chain)?.name || chain,
-    metric: metricNames[metric] || metric,
-    value: typeof value === 'number' ? value.toFixed(3) : value,
-    threshold: typeof threshold === 'number' ? threshold.toFixed(3) : threshold,
-  };
-  config.alertLog.unshift(logEntry);
+  const names = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' };
+  config.alertLog.unshift({ time: new Date().toLocaleTimeString(), chain: CHAINS.find(c => c.id === chain)?.name || chain, metric: names[metric] || metric, value: typeof value === 'number' ? value.toFixed(3) : value, threshold: typeof threshold === 'number' ? threshold.toFixed(3) : threshold });
   if (config.alertLog.length > 50) config.alertLog.pop();
   saveConfig();
   renderAlertLog();
@@ -531,17 +583,31 @@ function addAlertLog(chain, metric, value, threshold) {
 function renderAlertLog() {
   const count = config.alertLog.length;
   document.getElementById('alertCount').textContent = count + ' alert' + (count !== 1 ? 's' : '');
-  if (count === 0) {
-    document.getElementById('alertLogBody').innerHTML = '<div class="alert-empty">No alerts yet</div>';
-    return;
+  document.getElementById('alertLogBody').innerHTML = count === 0
+    ? '<div class="alert-empty">No alerts yet</div>'
+    : config.alertLog.map(e => `<div class="alert-item"><span class="alert-time">${e.time}</span><span class="alert-chain">${e.chain}</span><span class="alert-msg"><span class="metric">${e.metric}</span> ${e.value} > ${e.threshold}</span></div>`).join('');
+}
+
+// ─── Sampling Logic ───────────────────────────────────────────────────────────
+let lastSampleTime = 0;
+
+async function maybeSample() {
+  const now = Date.now();
+  const sampleMs = sampleInterval * 60 * 1000;
+  if (now - lastSampleTime < sampleMs) return;
+  lastSampleTime = Math.floor(now / sampleMs) * sampleMs;
+
+  for (const chain of CHAINS) {
+    const data = await fetchChainData(chain);
+    if (!data) continue;
+    addHistoryPoint(chain.id, {
+      t: lastSampleTime,
+      gas: parseFloat(data.gas.toFixed(4)),
+      baseFee: parseFloat(data.baseFee.toFixed(4)),
+      blobFee: data.blobFee !== null ? parseFloat(data.blobFee.toFixed(6)) : null,
+      util: parseFloat(data.utilPct.toFixed(2)),
+    });
   }
-  document.getElementById('alertLogBody').innerHTML = config.alertLog.map(e =>
-    `<div class="alert-item">
-      <span class="alert-time">${e.time}</span>
-      <span class="alert-chain">${e.chain}</span>
-      <span class="alert-msg"><span class="metric">${e.metric}</span> ${e.value} > ${e.threshold}</span>
-    </div>`
-  ).join('');
 }
 
 // ─── Main Refresh ─────────────────────────────────────────────────────────────
@@ -554,28 +620,174 @@ async function refresh() {
 
   document.getElementById('dashboard').innerHTML = renderDashboard(activeChain, data);
 
-  // Check alerts
-  const th = config.thresholds[activeChain];
-  if (data.gas      > th.gas)    triggerAlert(activeChain, 'gas',    data.gas,    th.gas);
-  if (data.baseFee  > th.baseFee) triggerAlert(activeChain, 'baseFee', data.baseFee, th.baseFee);
-  if (data.blobFee  !== null && th.blobFee > 0 && data.blobFee > th.blobFee)
+  const th = config.thresholds[activeChain] || {};
+  if (data.gas     > th.gas)    triggerAlert(activeChain, 'gas',     data.gas,     th.gas);
+  if (data.baseFee  > th.baseFee) triggerAlert(activeChain, 'baseFee', data.baseFee,  th.baseFee);
+  if (data.blobFee !== null && th.blobFee > 0 && data.blobFee > th.blobFee)
     triggerAlert(activeChain, 'blobFee', data.blobFee, th.blobFee);
 
   document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+
+  // Sample history
+  await maybeSample();
 }
 
+// ─── Charts ──────────────────────────────────────────────────────────────────
+function switchView(view) {
+  currentView = view;
+  document.getElementById('view-monitor').hidden = view !== 'monitor';
+  document.getElementById('view-charts').hidden  = view !== 'charts';
+  document.getElementById('tab-monitor').className = 'tab' + (view === 'monitor' ? ' active' : '');
+  document.getElementById('tab-charts').className  = 'tab' + (view === 'charts'  ? ' active' : '');
+  if (view === 'charts') {
+    updateBlobToggle();
+    renderChart();
+    updateStorageBar();
+  }
+}
+
+function updateBlobToggle() {
+  const chain = CHAINS.find(c => c.id === activeChart);
+  document.getElementById('blobToggle').hidden = !chain?.hasBlob;
+}
+
+function setChartRange(days) {
+  chartRange = days;
+  document.querySelectorAll('.chart-range-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.range) === days);
+  });
+  renderChart();
+}
+
+function toggleMetric(metric) {
+  if (metric === 'blobFee' && !CHAINS.find(c => c.id === activeChart)?.hasBlob) return;
+  activeMetrics[metric] = !activeMetrics[metric];
+  document.querySelectorAll('.metric-toggle').forEach(b => {
+    if (b.dataset.metric === metric) b.classList.toggle('active', activeMetrics[metric]);
+  });
+  renderChart();
+}
+
+function getFilteredHistory(chainId) {
+  const now = Date.now();
+  const cutoff = now - chartRange * 24 * 60 * 60 * 1000;
+  return (history[chainId] || []).filter(p => p.t >= cutoff);
+}
+
+function renderChart() {
+  const container = document.getElementById('chart');
+  container.innerHTML = '';
+
+  const chain = CHAINS.find(c => c.id === activeChart);
+  const data  = getFilteredHistory(activeChart);
+
+  if (!chartInstance) {
+    chartInstance = LightweightCharts.createChart(container, {
+      width: container.clientWidth || 600,
+      height: 220,
+      layout: {
+        background: { color: '#111827' },
+        textColor: '#6b7280',
+        fontSize: 10,
+      },
+      grid: {
+        vertLines: { color: '#1f2937' },
+        horzLines: { color: '#1f2937' },
+      },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      timeScale: {
+        borderColor: '#1f2937',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      rightPriceScale: { borderColor: '#1f2937' },
+    });
+  } else {
+    chartInstance.remove();
+    chartInstance = LightweightCharts.createChart(container, {
+      width: container.clientWidth || 600,
+      height: 220,
+      layout: { background: { color: '#111827' }, textColor: '#6b7280', fontSize: 10 },
+      grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      timeScale: { borderColor: '#1f2937', timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: '#1f2937' },
+    });
+  }
+
+  const seriesMap = {};
+
+  if (activeMetrics.gas) {
+    seriesMap.gas = chartInstance.addLineSeries({
+      color: '#10b981', lineWidth: 1.5, title: 'Priority Fee',
+      priceFormat: { precision: 3, minMove: 0.001 },
+    });
+    seriesMap.gas.setData(data.filter(d => d.gas != null).map(d => ({ time: d.t / 1000, value: d.gas })));
+  }
+
+  if (activeMetrics.baseFee) {
+    seriesMap.baseFee = chartInstance.addLineSeries({
+      color: '#f59e0b', lineWidth: 1.5, title: 'Base Fee',
+      priceFormat: { precision: 3, minMove: 0.001 },
+    });
+    seriesMap.baseFee.setData(data.filter(d => d.baseFee != null).map(d => ({ time: d.t / 1000, value: d.baseFee })));
+  }
+
+  if (activeMetrics.blobFee && chain.hasBlob) {
+    seriesMap.blobFee = chartInstance.addLineSeries({
+      color: '#a78bfa', lineWidth: 1.5, title: 'Blob Fee',
+      priceFormat: { precision: 5, minMove: 0.00001 },
+    });
+    seriesMap.blobFee.setData(data.filter(d => d.blobFee != null).map(d => ({ time: d.t / 1000, value: d.blobFee })));
+  }
+
+  if (activeMetrics.util) {
+    seriesMap.util = chartInstance.addLineSeries({
+      color: '#22d3ee', lineWidth: 1.5, title: 'Gas Util %',
+      priceFormat: { precision: 1, minMove: 0.1 },
+      priceScaleId: 'util',
+    });
+    chartInstance.priceScale('util').applyOptions({
+      scaleMargins: { top: 0.8, bottom: 0 },
+    });
+    seriesMap.util.setData(data.filter(d => d.util != null).map(d => ({ time: d.t / 1000, value: d.util })));
+  }
+
+  chartInstance.timeScale().fitContent();
+
+  const count = data.length;
+  const startDate = data.length > 0 ? new Date(data[0].t).toLocaleDateString() : '--';
+  const endDate   = data.length > 0 ? new Date(data[data.length-1].t).toLocaleDateString() : '--';
+  document.getElementById('chartMeta').textContent = count > 0 ? `${count} pts · ${startDate} → ${endDate}` : 'No data yet';
+
+  // Handle resize
+  const ro = new ResizeObserver(() => {
+    if (chartInstance) {
+      chartInstance.applyOptions({ width: container.clientWidth });
+    }
+  });
+  ro.observe(container);
+
+  updateStorageBar();
+}
+
+// ─── Chain Switch ─────────────────────────────────────────────────────────────
 window.switchChain = function(id) {
   activeChain = id;
   renderTabs(id);
   refresh();
 };
 
+window.switchChartChain = function(id) {
+  activeChart = id;
+  renderTabs(id);
+  updateBlobToggle();
+  renderChart();
+};
+
 // ─── Alert Modal ─────────────────────────────────────────────────────────────
 function openAlertModal() {
-  loadAlertState();
   document.getElementById('alertModal').style.display = 'flex';
-
-  // Populate fields
   document.getElementById('alertEnabled').checked = config.alertEnabled;
   document.getElementById('telegramToken').value = config.telegramToken || '';
   document.getElementById('telegramChatId').value = config.telegramChatId || '';
@@ -584,33 +796,28 @@ function openAlertModal() {
   document.getElementById('smtpUser').value = config.smtpUser || '';
   document.getElementById('smtpPass').value = config.smtpPass || '';
   document.getElementById('smtpTo').value = config.smtpTo || '';
-  document.getElementById('cooldownMin').value = config.cooldownMin;
+  document.getElementById('cooldownMin').value = config.cooldownMin || 5;
   updateAlertToggle();
-
-  // Threshold chains
   document.getElementById('thresholdChains').innerHTML = CHAINS.map(c => `
     <div class="threshold-chain">
       <div class="threshold-chain-name">${c.name}</div>
-      <div class="threshold-row"><label>Priority Fee &gt;</label><input id="th_${c.id}_gas" type="number" step="0.1" value="${config.thresholds[c.id]?.gas || 0}"> <span style="font-size:0.65rem;color:#4b5563">gwei</span></div>
-      <div class="threshold-row"><label>Base Fee &gt;</label><input id="th_${c.id}_baseFee" type="number" step="0.1" value="${config.thresholds[c.id]?.baseFee || 0}"> <span style="font-size:0.65rem;color:#4b5563">gwei</span></div>
-      ${c.hasBlob ? `<div class="threshold-row"><label>Blob Fee &gt;</label><input id="th_${c.id}_blobFee" type="number" step="0.001" value="${config.thresholds[c.id]?.blobFee || 0}"> <span style="font-size:0.65rem;color:#4b5563">gwei</span></div>` : ''}
-    </div>
-  `).join('');
+      <div class="threshold-row"><label>Priority Fee &gt;</label><input id="th_${c.id}_gas" type="number" step="0.1" value="${config.thresholds[c.id]?.gas || 0}"><span style="font-size:0.62rem;color:#4b5563">gwei</span></div>
+      <div class="threshold-row"><label>Base Fee &gt;</label><input id="th_${c.id}_baseFee" type="number" step="0.1" value="${config.thresholds[c.id]?.baseFee || 0}"><span style="font-size:0.62rem;color:#4b5563">gwei</span></div>
+      ${c.hasBlob ? `<div class="threshold-row"><label>Blob Fee &gt;</label><input id="th_${c.id}_blobFee" type="number" step="0.001" value="${config.thresholds[c.id]?.blobFee || 0}"><span style="font-size:0.62rem;color:#4b5563">gwei</span></div>` : ''}
+    </div>`).join('');
 }
 
 function updateAlertToggle() {
-  const enabled = document.getElementById('alertEnabled').checked;
-  document.getElementById('toggleTrack').style.background = enabled ? '#3f0f0f' : '#1f2937';
-  document.getElementById('toggleThumb').style.background = enabled ? '#ef4444' : '#6b7280';
-  document.getElementById('toggleThumb').style.left = enabled ? '18px' : '2px';
-  document.getElementById('toggleLabel').textContent = enabled ? 'Enabled' : 'Disabled';
-  document.getElementById('alertIndicator').className = 'alert-indicator ' + (enabled ? 'on' : 'off');
-  document.getElementById('alertIndicator').textContent = enabled ? '🔔 Alerts On' : '🔔 Alerts Off';
+  const en = document.getElementById('alertEnabled').checked;
+  document.getElementById('toggleTrack').style.background = en ? '#3f0f0f' : '#1f2937';
+  document.getElementById('toggleThumb').style.background = en ? '#ef4444' : '#6b7280';
+  document.getElementById('toggleThumb').style.left = en ? '16px' : '2px';
+  document.getElementById('toggleLabel').textContent = en ? 'Enabled' : 'Disabled';
+  document.getElementById('alertIndicator').className = 'alert-indicator ' + (en ? 'on' : 'off');
+  document.getElementById('alertIndicator').textContent = en ? '🔔 Alerts On' : '🔔 Alerts Off';
 }
 
-function closeAlertModal() {
-  document.getElementById('alertModal').style.display = 'none';
-}
+function closeAlertModal() { document.getElementById('alertModal').style.display = 'none'; }
 
 function saveAlertConfig() {
   config.alertEnabled = document.getElementById('alertEnabled').checked;
@@ -622,14 +829,13 @@ function saveAlertConfig() {
   config.smtpPass = document.getElementById('smtpPass').value;
   config.smtpTo = document.getElementById('smtpTo').value.trim();
   config.cooldownMin = parseInt(document.getElementById('cooldownMin').value) || 5;
-
   CHAINS.forEach(c => {
-    if (!config.thresholds[c.id]) config.thresholds[c.id] = {};
-    config.thresholds[c.id].gas = parseFloat(document.getElementById('th_' + c.id + '_gas').value) || 0;
-    config.thresholds[c.id].baseFee = parseFloat(document.getElementById('th_' + c.id + '_baseFee').value) || 0;
-    if (c.hasBlob) config.thresholds[c.id].blobFee = parseFloat(document.getElementById('th_' + c.id + '_blobFee').value) || 0;
+    config.thresholds[c.id] = {
+      gas:    parseFloat(document.getElementById('th_' + c.id + '_gas').value) || 0,
+      baseFee: parseFloat(document.getElementById('th_' + c.id + '_baseFee').value) || 0,
+      ...(c.hasBlob ? { blobFee: parseFloat(document.getElementById('th_' + c.id + '_blobFee').value) || 0 } : {}),
+    };
   });
-
   saveConfig();
   updateAlertToggle();
   closeAlertModal();
@@ -647,28 +853,28 @@ function clearAlertLog() {
 async function testTelegram() {
   const token = document.getElementById('telegramToken').value.trim();
   const chatId = document.getElementById('telegramChatId').value.trim();
-  const status = document.getElementById('telegramStatus');
-  if (!token || !chatId) { status.textContent = 'Fill token + chat ID'; status.style.color = '#f87171'; return; }
-  status.textContent = 'Sending...'; status.style.color = '#6b7280';
+  const st = document.getElementById('telegramStatus');
+  if (!token || !chatId) { st.textContent = 'Fill both fields'; st.style.color = '#f87171'; return; }
+  st.textContent = 'Sending...'; st.style.color = '#6b7280';
   try {
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: '✅ Multi-Chain Monitor test message', parse_mode: 'HTML' })
+      body: JSON.stringify({ chat_id: chatId, text: '✅ MCM test', parse_mode: 'HTML' })
     }).then(r => r.json());
-    status.textContent = r.ok ? 'Sent!' : 'Error: ' + (r.description || 'failed');
-    status.style.color = r.ok ? '#10b981' : '#f87171';
-  } catch(e) { status.textContent = 'Network error'; status.style.color = '#f87171'; }
+    st.textContent = r.ok ? 'Sent!' : r.description || 'Error';
+    st.style.color = r.ok ? '#10b981' : '#f87171';
+  } catch(e) { st.textContent = 'Network error'; st.style.color = '#f87171'; }
 }
 
 async function testEmail() {
   const user = document.getElementById('smtpUser').value.trim();
   const pass = document.getElementById('smtpPass').value;
-  const to = document.getElementById('smtpTo').value.trim();
+  const to   = document.getElementById('smtpTo').value.trim();
   const host = document.getElementById('smtpHost').value.trim();
   const port = document.getElementById('smtpPort').value.trim();
-  const status = document.getElementById('emailStatus');
-  if (!user || !pass || !to) { status.textContent = 'Fill all fields'; status.style.color = '#f87171'; return; }
-  status.textContent = 'Sending...'; status.style.color = '#6b7280';
+  const st   = document.getElementById('emailStatus');
+  if (!user || !pass || !to) { st.textContent = 'Fill all fields'; st.style.color = '#f87171'; return; }
+  st.textContent = 'Sending...'; st.style.color = '#6b7280';
   try {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
@@ -676,25 +882,22 @@ async function testEmail() {
       s.onload = resolve; s.onerror = reject;
       document.head.appendChild(s);
     });
-    const result = await Email.send({
-      Host: host + ':' + port, Username: user, Password: pass,
-      To: to, From: user, Subject: 'MCM Test Email', Body: 'Test from Multi-Chain Monitor ✅',
-      tls: true
-    });
-    status.textContent = result === 'OK' ? 'Sent!' : result;
-    status.style.color = result === 'OK' ? '#10b981' : '#f87171';
-  } catch(e) { status.textContent = 'Error: ' + e.message; status.style.color = '#f87171'; }
+    const result = await Email.send({ Host: host+':'+port, Username: user, Password: pass, To: to, From: user, Subject: 'MCM Test', Body: 'Test ✅', tls: true });
+    st.textContent = result === 'OK' ? 'Sent!' : result;
+    st.style.color = result === 'OK' ? '#10b981' : '#f87171';
+  } catch(e) { st.textContent = 'Error: ' + e.message; st.style.color = '#f87171'; }
 }
 
 // ─── Settings Modal ──────────────────────────────────────────────────────────
 function openSettingsModal() {
   document.getElementById('settingsModal').style.display = 'flex';
   document.getElementById('settingInterval').value = Math.round(refreshInterval / 1000);
+  document.getElementById('settingSampleMin').value = sampleInterval;
 }
 function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
 function saveSettings() {
-  const secs = parseInt(document.getElementById('settingInterval').value) || 15;
-  refreshInterval = Math.max(5, Math.min(300, secs)) * 1000;
+  refreshInterval = (parseInt(document.getElementById('settingInterval').value) || 15) * 1000;
+  sampleInterval = parseInt(document.getElementById('settingSampleMin').value) || 15;
   if (alertTimer) clearInterval(alertTimer);
   alertTimer = setInterval(refresh, refreshInterval);
   saveConfig();
@@ -703,6 +906,7 @@ function saveSettings() {
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
 loadConfig();
+loadHistory();
 loadAlertState();
 renderTabs(activeChain);
 updateAlertToggle();
