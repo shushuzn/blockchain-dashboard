@@ -335,12 +335,15 @@ const CHAINS = [
   { id: 'base',      name: 'Base',        color: '#0052ff', rpc: 'https://mainnet.base.org',        explorer: 'https://basescan.org',            decimals: 18, hasBlob: true },
   { id: 'arbitrum',  name: 'Arbitrum',    color: '#28a0f0', rpc: 'https://arb1.arbitrum.io/rpc',   explorer: 'https://arbiscan.io',            decimals: 18, hasBlob: false },
   { id: 'optimism',  name: 'Optimism',    color: '#ff0420', rpc: 'https://mainnet.optimism.io',    explorer: 'https://optimistic.etherscan.io', decimals: 18, hasBlob: false },
+  { id: 'solana',    name: 'Solana',      color: '#00ffa3', rpc: 'https://api.mainnet-beta.solana.com', explorer: 'https://solscan.io', decimals: 0, hasBlob: false, isSolana: true },
 ];
+const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let activeChain  = 'ethereum';
 let activeChart  = 'ethereum';
 let currentView  = 'monitor';
+let solanaData = null;
 let ethPrice     = null;
 let refreshInterval = 15000;
 let sampleInterval   = 15;  // minutes
@@ -380,6 +383,21 @@ function loadConfig() {
       const p = JSON.parse(s);
       config = { ...DEFAULT_CONFIG, ...p, thresholds: { ...DEFAULT_CONFIG.thresholds, ...(p.thresholds || {}) } };
       CHAINS.forEach(c => { config.thresholds[c.id] = { ...DEFAULT_CONFIG.thresholds[c.id], ...config.thresholds[c.id] }; });
+    } else if (view === 'solana') {
+      showSection('monitor');
+      chain = 'solana';
+      document.querySelectorAll('.chain-btn').forEach(function(b){b.classList.remove('active');});
+      var sb = document.getElementById('chain-solana');
+      if (sb) sb.classList.add('active');
+      var evm_panels = ['ethereum','base','arbitrum','optimism'];
+      for (var i4=0; i4<evm_panels.length; i4++) {
+        var p = document.getElementById('panel-' + evm_panels[i4]);
+        if (p) p.style.display = 'none';
+      }
+      var sp = document.getElementById('panel-solana');
+      if (sp) sp.style.display = 'block';
+      document.getElementById('chart-container').style.display = 'none';
+      refresh();
     } else { config = { ...DEFAULT_CONFIG }; }
   } catch(e) { config = { ...DEFAULT_CONFIG }; }
 }
@@ -548,6 +566,43 @@ async function fetchChainData(chain) {
     mcap,
   };
 }
+async function fetchSolanaData() {
+  try {
+    var [ei, ps, sp] = await Promise.all([
+      rpcCall(SOLANA_RPC, {"jsonrpc":"2.0","id":1,"method":"getEpochInfo"}),
+      rpcCall(SOLANA_RPC, {"jsonrpc":"2.0","id":1,"method":"getRecentPerformanceSamples","params":[5]}),
+      fetchSolPrice(),
+    ]);
+    var abs = (ei.result && ei.result.absoluteSlot) || 0;
+    var ep = (ei.result && ei.result.epoch) || 0;
+    var si = (ei.result && ei.result.slotIndex) || 0;
+    var sie = (ei.result && ei.result.slotsInEpoch) || 432000;
+    var bh = (ei.result && ei.result.blockHeight) || 0;
+    var tps = 0, sc = 0;
+    if (ps.result) {
+      for (var i2 = 0; i2 < ps.result.length; i2++) {
+        var s = ps.result[i2];
+        if (s.samplePeriodSecs > 0) { tps += s.numTransactions / s.samplePeriodSecs; sc++; }
+      }
+      tps = sc > 0 ? tps / sc : 0;
+    }
+    var su = sp || 0;
+    var pr = sie > 0 ? ((si / sie) * 100).toFixed(1) : "0.0";
+    var fmt = su > 0 ? "$" + su.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "-";
+    return { slot: abs.toLocaleString(), blockHeight: bh.toLocaleString(), epoch: ep,
+             slotInEpoch: si.toLocaleString(), slotsInEpoch: sie.toLocaleString(),
+             epochProgress: pr + "%", tps: tps.toFixed(0),
+             solPrice: fmt, solPriceRaw: su };
+  } catch (e) { console.warn("Solana error:", e); return null; }
+}
+async function fetchSolPrice() {
+  try {
+    var r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
+    var d = await r.json();
+    return (d.solana && d.solana.usd) || 0;
+  } catch (e) { return 0; }
+}
+
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 function renderDashboard(chain, data) {
@@ -1062,6 +1117,27 @@ updateAlertToggle();
 renderAlertLog();
 refresh();
 alertTimer = setInterval(refresh, refreshInterval);
+
+function renderSolanaPanel(d) {
+  var ids = ["sol-price","sol-slot","sol-block","sol-epoch","sol-epoch-progress","sol-tps"];
+  var vals = [d.solPrice, d.slot, d.blockHeight, "Epoch "+d.epoch, d.epochProgress, d.tps];
+  for (var i3=0; i3<ids.length; i3++) {
+    var el = document.getElementById(ids[i3]);
+    if (el) el.textContent = vals[i3];
+  }
+}
+function updateSolanaAlertState(d) {
+  if (!config.alertEnabled) return;
+  if (d.tps > 5000) {
+    var key = "solana_tps", now = Date.now(), cd = (config.cooldownMin || 5) * 60000;
+    if (!alertState[key] || (now - alertState[key]) >= cd) {
+      alertState[key] = now; saveAlertState();
+      var msg = "[SOL] TPS Alert: " + d.tps + " (limit: 5000)";
+      Promise.all([sendTelegram(msg), sendEmail("[MCM] Solana TPS", "Solana TPS: " + d.tps + " (limit: 5000)")]);
+      addAlertLog("solana", "TPS", d.tps, 5000);
+    }
+  }
+}
 </script>
 </body>
 </html>
