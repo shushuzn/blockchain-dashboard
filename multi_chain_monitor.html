@@ -3,112 +3,322 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Multi-Chain Monitor</title>
+<title>Multi-Chain Monitor + Alerts</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0a0e17; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 20px 24px; }
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
   h1 { font-size: 1.4rem; font-weight: 600; color: #818cf8; }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+  .btn { padding: 6px 14px; border-radius: 7px; border: 1px solid #1f2937; background: #111827; color: #9ca3af; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+  .btn:hover { border-color: #374151; color: #e2e8f0; }
+  .btn-alert { border-color: #ef4444; color: #ef4444; }
+  .btn-alert:hover { background: #1f0a0a; }
+  .btn-alert.active { background: #7f1d1d; border-color: #ef4444; color: #fca5a5; }
   .chain-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chain-tab {
-    padding: 6px 16px; border-radius: 8px; border: 1px solid #1f2937;
-    background: #111827; color: #6b7280; cursor: pointer; font-size: 0.85rem;
-    transition: all 0.2s;
-  }
+  .chain-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid #1f2937; background: #111827; color: #6b7280; cursor: pointer; font-size: 0.82rem; transition: all 0.2s; }
   .chain-tab:hover { border-color: #374151; color: #9ca3af; }
   .chain-tab.active { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 18px; }
-  .card-label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .card-value { font-size: 1.6rem; font-weight: 700; }
-  .card-sub { font-size: 0.7rem; color: #4b5563; margin-top: 3px; }
+  .eth-price-banner { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+  .eth-price-banner .label { font-size: 0.65rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+  .eth-price-banner .price { font-size: 1rem; font-weight: 700; color: #fb923c; }
+  .eth-price-banner .change { font-size: 0.78rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
+  .card-label { font-size: 0.65rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .card-value { font-size: 1.5rem; font-weight: 700; }
+  .card-sub { font-size: 0.65rem; color: #4b5563; margin-top: 2px; }
   .green { color: #10b981; } .red { color: #ef4444; } .yellow { color: #f59e0b; }
   .purple { color: #a78bfa; } .orange { color: #fb923c; } .cyan { color: #22d3ee; }
-  .chain-color { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .eth-price-banner { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
-  .eth-price-banner .label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
-  .eth-price-banner .price { font-size: 1.1rem; font-weight: 700; color: #fb923c; }
-  .eth-price-banner .change { font-size: 0.8rem; }
-  .progress-bar { height: 5px; background: #1f2937; border-radius: 3px; margin-top: 6px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-  .footer { font-size: 0.65rem; color: #374151; margin-top: 20px; }
-  .chain-meta { font-size: 0.7rem; color: #4b5563; margin-bottom: 16px; }
+  .chain-meta { font-size: 0.68rem; color: #4b5563; margin-bottom: 14px; }
+  .chain-color { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .progress-bar { height: 4px; background: #1f2937; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .footer { font-size: 0.62rem; color: #374151; margin-top: 18px; }
   .loading { opacity: 0.4; }
-  .chain-icon { width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+
+  /* Alert Log */
+  .alert-log { background: #111827; border: 1px solid #1f2937; border-radius: 10px; margin-top: 16px; overflow: hidden; }
+  .alert-log-header { padding: 10px 16px; background: #0d1117; border-bottom: 1px solid #1f2937; font-size: 0.72rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
+  .alert-log-body { max-height: 160px; overflow-y: auto; }
+  .alert-item { padding: 8px 16px; font-size: 0.72rem; border-bottom: 1px solid #161b22; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-time { color: #4b5563; min-width: 70px; }
+  .alert-chain { color: #6b7280; min-width: 70px; }
+  .alert-msg { color: #e2e8f0; flex: 1; }
+  .alert-msg .metric { color: #f87171; font-weight: 600; }
+  .alert-empty { padding: 16px; text-align: center; color: #374151; font-size: 0.72rem; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal { background: #111827; border: 1px solid #1f2937; border-radius: 14px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 1rem; font-weight: 600; color: #e2e8f0; }
+  .modal-close { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1.2rem; padding: 4px; }
+  .modal-close:hover { color: #e2e8f0; }
+  .modal-body { padding: 20px; }
+  .modal-section { margin-bottom: 24px; }
+  .modal-section:last-child { margin-bottom: 0; }
+  .modal-section-title { font-size: 0.72rem; color: #818cf8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #1f2937; }
+  .form-row { margin-bottom: 12px; }
+  .form-label { font-size: 0.72rem; color: #9ca3af; margin-bottom: 4px; display: block; }
+  .form-input { width: 100%; padding: 7px 10px; background: #0d1117; border: 1px solid #1f2937; border-radius: 7px; color: #e2e8f0; font-size: 0.82rem; }
+  .form-input:focus { outline: none; border-color: #6366f1; }
+  .form-input::placeholder { color: #374151; }
+  .form-hint { font-size: 0.65rem; color: #4b5563; margin-top: 3px; }
+  .form-hint a { color: #6b7280; }
+  .form-row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .threshold-chain { margin-bottom: 14px; padding: 12px; background: #0d1117; border-radius: 8px; border: 1px solid #161b22; }
+  .threshold-chain-name { font-size: 0.75rem; color: #a5b4fc; margin-bottom: 8px; font-weight: 600; }
+  .threshold-row { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .threshold-row label { font-size: 0.68rem; color: #6b7280; }
+  .threshold-row input { padding: 4px 8px; background: #111827; border: 1px solid #1f2937; border-radius: 5px; color: #e2e8f0; font-size: 0.75rem; width: 80px; }
+  .threshold-row input:focus { outline: none; border-color: #6366f1; }
+  .cooldown-row { display: flex; align-items: center; gap: 8px; }
+  .cooldown-row input { width: 60px !important; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid #1f2937; display: flex; justify-content: space-between; gap: 10px; }
+  .btn-secondary { background: #0d1117; }
+  .btn-primary { background: #3730a3; border-color: #4f46e5; color: #e0e7ff; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-danger { background: #7f1d1d; border-color: #b91c1c; color: #fca5a5; }
+  .btn-danger:hover { background: #991b1b; }
+  .alert-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; padding: 3px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+  .alert-indicator.on { background: #3f0f0f; color: #f87171; border: 1px solid #7f1d1d; }
+  .alert-indicator.off { background: #0d1117; color: #374151; border: 1px solid #1f2937; }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>Multi-Chain Monitor</h1>
-  <div class="chain-tabs" id="tabs"></div>
+  <div class="header-right">
+    <span class="alert-indicator off" id="alertIndicator">🔔 Alerts Off</span>
+    <button class="btn btn-alert" id="alertBtn" onclick="openAlertModal()">🔔 Alerts</button>
+    <button class="btn" onclick="openSettingsModal()">⚙</button>
+  </div>
 </div>
 
+<div class="chain-tabs" id="tabs"></div>
+
 <div class="eth-price-banner">
-  <div><div class="label">ETH Price</div><div class="price" id="ethPrice">--</div></div>
-  <div><div class="label">24h Change</div><div class="change green" id="ethChange">--</div></div>
-  <div><div class="label">BTC Price</div><div class="price" id="btcPrice">--</div></div>
-  <div><div class="label">Updated</div><div class="change" id="updated">--</div></div>
+  <div><div class="label">ETH</div><div class="price" id="ethPrice">--</div></div>
+  <div><div class="label">24h</div><div class="change green" id="ethChange">--</div></div>
+  <div><div class="label">BTC</div><div class="price" id="btcPrice">--</div></div>
+  <div><div class="label">Updated</div><div id="updated" style="font-size:0.78rem;color:#6b7280">--</div></div>
 </div>
 
 <div id="dashboard"></div>
 
-<div class="footer">Auto-refreshes every 15s &middot; Supports Ethereum, Base, Arbitrum, Optimism &middot; ETH/BTC via CoinGecko</div>
+<div class="alert-log" id="alertLog">
+  <div class="alert-log-header">
+    <span>📋 Alert History</span>
+    <span id="alertCount">0 alerts</span>
+  </div>
+  <div class="alert-log-body" id="alertLogBody">
+    <div class="alert-empty">No alerts yet</div>
+  </div>
+</div>
 
+<div class="footer">Auto-refreshes every 15s &middot; Alerts via Telegram or SMTP Email</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚙ Settings</span>
+      <button class="modal-close" onclick="closeSettingsModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">Refresh</div>
+        <div class="form-row">
+          <label class="form-label">Refresh Interval (seconds)</label>
+          <input class="form-input" id="settingInterval" type="number" min="5" max="300" value="15" placeholder="15">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alert Config Modal -->
+<div class="modal-overlay" id="alertModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔔 Alert Configuration</span>
+      <button class="modal-close" onclick="closeAlertModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Enable Toggle -->
+      <div class="modal-section">
+        <div class="modal-section-title">Status</div>
+        <div class="form-row" style="display:flex;align-items:center;gap:12px;">
+          <label style="font-size:0.8rem;color:#9ca3af">Enable Alerts</label>
+          <label class="toggle" style="position:relative;cursor:pointer;">
+            <input type="checkbox" id="alertEnabled" onchange="updateAlertToggle()" style="display:none;">
+            <span id="toggleTrack" style="display:inline-block;width:36px;height:20px;background:#1f2937;border-radius:10px;transition:all 0.2s;position:relative;">
+              <span id="toggleThumb" style="display:inline-block;width:16px;height:16px;background:#6b7280;border-radius:50%;position:absolute;top:2px;left:2px;transition:all 0.2s;"></span>
+            </span>
+          </label>
+          <span id="toggleLabel" style="font-size:0.72rem;color:#6b7280;">Disabled</span>
+        </div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="modal-section">
+        <div class="modal-section-title">Telegram</div>
+        <div class="form-row">
+          <label class="form-label">Bot Token</label>
+          <input class="form-input" id="telegramToken" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxYZ">
+          <div class="form-hint">Create a bot via <a href="https://t.me/BotFather" target="_blank">@BotFather</a>, paste token here</div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Chat ID</label>
+          <input class="form-input" id="telegramChatId" placeholder="123456789">
+          <div class="form-hint">DM <a href="https://t.me/userid_inline_bot" target="_blank">@userid_inline_bot</a> to get your Chat ID</div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Test Channel</label>
+          <button class="btn" style="font-size:0.72rem;" onclick="testTelegram()">Send Test Message</button>
+          <span id="telegramStatus" style="font-size:0.7rem;margin-left:8px;color:#4b5563;"></span>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="modal-section">
+        <div class="modal-section-title">Email (SMTP)</div>
+        <div class="form-row form-row-inline">
+          <div>
+            <label class="form-label">SMTP Host</label>
+            <input class="form-input" id="smtpHost" placeholder="smtp.gmail.com">
+          </div>
+          <div>
+            <label class="form-label">Port</label>
+            <input class="form-input" id="smtpPort" placeholder="587">
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Username / Email</label>
+          <input class="form-input" id="smtpUser" placeholder="your@gmail.com">
+        </div>
+        <div class="form-row">
+          <label class="form-label">App Password</label>
+          <input class="form-input" id="smtpPass" type="password" placeholder="xxxx xxxx xxxx xxxx">
+          <div class="form-hint">Gmail: Account → Security → 2FA → App Passwords</div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">To Email</label>
+          <input class="form-input" id="smtpTo" placeholder="alert@example.com">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Test Email</label>
+          <button class="btn" style="font-size:0.72rem;" onclick="testEmail()">Send Test Email</button>
+          <span id="emailStatus" style="font-size:0.7rem;margin-left:8px;color:#4b5563;"></span>
+        </div>
+      </div>
+
+      <!-- Thresholds -->
+      <div class="modal-section">
+        <div class="modal-section-title">Thresholds (per chain)</div>
+        <div class="form-row">
+          <label class="form-label">Cooldown (minutes) — prevent spam</label>
+          <div class="cooldown-row">
+            <input class="form-input" id="cooldownMin" type="number" min="1" max="1440" value="5" style="width:70px;">
+            <span style="font-size:0.7rem;color:#4b5563;">minutes before re-alerting same metric</span>
+          </div>
+        </div>
+        <div id="thresholdChains"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="clearAlertLog()">Clear Log</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="closeAlertModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAlertConfig()">Save Alerts</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script>
-// ─── Chain Registry ────────────────────────────────────────────────────────────
+// ─── Chain Registry ───────────────────────────────────────────────────────────
 const CHAINS = [
-  {
-    id: 'ethereum', name: 'Ethereum', symbol: 'ETH', color: '#627eea',
-    rpc: 'https://eth.llamarpc.com',
-    explorer: 'https://etherscan.io',
-    decimals: 18,
-    hasBlob: true,
-    icon: '🔷',
-  },
-  {
-    id: 'base', name: 'Base', symbol: 'ETH', color: '#0052ff',
-    rpc: 'https://mainnet.base.org',
-    explorer: 'https://basescan.org',
-    decimals: 18,
-    hasBlob: true,
-    icon: '🔵',
-  },
-  {
-    id: 'arbitrum', name: 'Arbitrum', symbol: 'ETH', color: '#28a0f0',
-    rpc: 'https://arb1.arbitrum.io/rpc',
-    explorer: 'https://arbiscan.io',
-    decimals: 18,
-    hasBlob: false,
-    icon: '🔷',
-  },
-  {
-    id: 'optimism', name: 'Optimism', symbol: 'ETH', color: '#ff0420',
-    rpc: 'https://mainnet.optimism.io',
-    explorer: 'https://optimistic.etherscan.io',
-    decimals: 18,
-    hasBlob: false,
-    icon: '🔴',
-  },
+  { id: 'ethereum',  name: 'Ethereum',   color: '#627eea', rpc: 'https://eth.llamarpc.com',     explorer: 'https://etherscan.io',            decimals: 18, hasBlob: true },
+  { id: 'base',      name: 'Base',        color: '#0052ff', rpc: 'https://mainnet.base.org',      explorer: 'https://basescan.org',            decimals: 18, hasBlob: true },
+  { id: 'arbitrum',  name: 'Arbitrum',    color: '#28a0f0', rpc: 'https://arb1.arbitrum.io/rpc', explorer: 'https://arbiscan.io',              decimals: 18, hasBlob: false },
+  { id: 'optimism',  name: 'Optimism',    color: '#ff0420', rpc: 'https://mainnet.optimism.io',  explorer: 'https://optimistic.etherscan.io', decimals: 18, hasBlob: false },
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let activeChain = 'ethereum';
 let ethPrice = null;
+let refreshInterval = 15000;
+let alertTimer = null;
+
+// ─── Config ─────────────────────────────────────────────────────────────────
+const DEFAULT_CONFIG = {
+  alertEnabled: false,
+  telegramToken: '',
+  telegramChatId: '',
+  smtpHost: 'smtp.gmail.com',
+  smtpPort: '587',
+  smtpUser: '',
+  smtpPass: '',
+  smtpTo: '',
+  cooldownMin: 5,
+  thresholds: {
+    ethereum: { gas: 50, baseFee: 50, blobFee: 0.1 },
+    base:      { gas: 30, baseFee: 30, blobFee: 0.1 },
+    arbitrum:  { gas: 5,  baseFee: 5,  blobFee: 0 },
+    optimism:  { gas: 5,  baseFee: 5,  blobFee: 0 },
+  },
+  alertLog: [],   // { time, chain, metric, value, threshold }
+};
+
+let config = { ...DEFAULT_CONFIG, thresholds: { ...DEFAULT_CONFIG.thresholds, ethereum: {...DEFAULT_CONFIG.thresholds.ethereum}, base: {...DEFAULT_CONFIG.thresholds.base}, arbitrum: {...DEFAULT_CONFIG.thresholds.arbitrum}, optimism: {...DEFAULT_CONFIG.thresholds.optimism} } };
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem('mcm_config_v2');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      config = {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        thresholds: {
+          ...DEFAULT_CONFIG.thresholds,
+          ...(parsed.thresholds || {}),
+        }
+      };
+      // Ensure each chain has all threshold keys
+      CHAINS.forEach(c => {
+        config.thresholds[c.id] = { ...DEFAULT_CONFIG.thresholds[c.id], ...config.thresholds[c.id] };
+      });
+    }
+  } catch(e) {}
+}
+function saveConfig() {
+  try { localStorage.setItem('mcm_config_v2', JSON.stringify(config)); } catch(e) {}
+}
 
 // ─── RPC Helper ─────────────────────────────────────────────────────────────
 async function rpcCall(chain, method, params = []) {
   try {
     const r = await fetch(chain.rpc, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 })
     }).then(r => r.json());
     return r.result;
   } catch(e) { return null; }
 }
 
-// ─── Fetch ETH Price ─────────────────────────────────────────────────────────
-async function fetchEthPrice() {
+// ─── Price ────────────────────────────────────────────────────────────────────
+async function fetchPrice() {
   try {
     const d = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin&vs_currencies=usd&include_24hr_change=true'
@@ -120,109 +330,94 @@ async function fetchEthPrice() {
     el.textContent = (c >= 0 ? '+' : '') + c.toFixed(2) + '%';
     el.className = 'change ' + (c >= 0 ? 'green' : 'red');
     document.getElementById('btcPrice').textContent = '$' + d.bitcoin.usd.toLocaleString();
-  } catch(e) { document.getElementById('ethPrice').textContent = 'Error'; }
+  } catch(e) {}
 }
 
-// ─── Fetch Chain Data ────────────────────────────────────────────────────────
+// ─── Chain Data ───────────────────────────────────────────────────────────────
 async function fetchChainData(chain) {
-  const [block, feeHistory] = await Promise.all([
+  const [block, feeHistory, supply] = await Promise.all([
     rpcCall(chain, 'eth_getBlockByNumber', ['latest', false]),
-    chain.hasBlob
-      ? rpcCall(chain, 'eth_feeHistory', ['0x4', 'latest', [50]])
-      : rpcCall(chain, 'eth_feeHistory', ['0x4', 'latest', [50]]),
+    rpcCall(chain, 'eth_feeHistory', ['0x4', 'latest', [50]]),
     rpcCall(chain, 'eth_totalSupply', []),
   ]);
+  if (!block) return null;
 
-  if (!block) return;
-
-  const bNum = parseInt(block.number, 16);
-  const ts = parseInt(block.timestamp, 16);
+  const bNum    = parseInt(block.number, 16);
+  const ts      = parseInt(block.timestamp, 16);
   const gasUsed = parseInt(block.gasUsed, 16);
-  const gasLimit = parseInt(block.gasLimit, 16);
+  const gasLimit= parseInt(block.gasLimit, 16);
   const utilPct = (gasUsed / gasLimit * 100).toFixed(1);
-  const txs = block.transactions.length;
+  const txs     = block.transactions.length;
 
-  // Base Fee
-  const baseFee = feeHistory ? parseInt(feeHistory.baseFeePerGas[feeHistory.baseFeePerGas.length - 1], 16) / 1e9 : 0;
+  const bfArr = feeHistory ? feeHistory.baseFeePerGas : [];
+  const baseFee = bfArr.length ? parseInt(bfArr[bfArr.length - 1], 16) / 1e9 : 0;
 
-  // Priority Fee (median of rewards)
   let priorityFee = 0;
   if (feeHistory && feeHistory.reward) {
-    const rewards = feeHistory.reward.map(r => parseInt(r, 16) / 1e9).filter(r => r > 0);
-    if (rewards.length > 0) priorityFee = rewards.reduce((a, b) => a + b, 0) / rewards.length;
+    const rw = feeHistory.reward.map(r => parseInt(r, 16) / 1e9).filter(r => r > 0);
+    if (rw.length) priorityFee = rw.reduce((a, b) => a + b, 0) / rw.length;
   }
 
-  // Blob Fee
-  let blobFeeDisplay = 'N/A';
+  let blobFee = null;
   if (chain.hasBlob) {
     try {
-      const blobFeeRaw = await rpcCall(chain, 'eth_getBlobPrice', []);
-      if (blobFeeRaw) {
-        const bf = parseInt(blobFeeRaw, 16) / 1e9;
-        blobFeeDisplay = bf > 0 ? bf.toFixed(4) : '0.001';
-      }
-    } catch(e) {
-      blobFeeDisplay = 'N/A';
-    }
+      const bfr = await rpcCall(chain, 'eth_getBlobPrice', []);
+      blobFee = bfr ? parseInt(bfr, 16) / 1e9 : null;
+    } catch(e) {}
   }
 
-  // Supply
-  const supplyRaw = await rpcCall(chain, 'eth_totalSupply', []);
-  const totalSupply = supplyRaw ? parseInt(supplyRaw, 16) / Math.pow(10, chain.decimals) : 0;
-
-  // Market Cap
-  const mcap = ethPrice ? '$' + (totalSupply * ethPrice / 1e6).toFixed(2) + 'B' : '--';
-
-  const utilColor = utilPct > 80 ? 'red' : utilPct > 50 ? 'yellow' : 'green';
-  const baseFeeColor = baseFee > 50 ? 'red' : baseFee > 10 ? 'yellow' : 'green';
+  const totalSupply = supply ? parseInt(supply, 16) / Math.pow(10, chain.decimals) : 0;
+  const mcap = ethPrice ? '$' + (totalSupply * ethPrice / 1e9).toFixed(2) + 'B' : '--';
 
   return {
-    block: bNum.toLocaleString(),
+    block: bNum, blockFmt: bNum.toLocaleString(),
     blockSub: `${txs} txs · ${utilPct}% gas · ${new Date(ts * 1000).toLocaleTimeString()}`,
-    gas: priorityFee.toFixed(3),
-    baseFee: baseFee.toFixed(3),
-    blobFee: blobFeeDisplay,
-    util: utilPct,
-    utilColor,
-    baseFeeColor,
+    gas: priorityFee, gasFmt: priorityFee.toFixed(3),
+    baseFee, baseFeeFmt: baseFee.toFixed(3),
+    blobFee, blobFeeFmt: blobFee !== null ? blobFee.toFixed(4) : 'N/A',
+    utilPct: parseFloat(utilPct),
     supply: (totalSupply / 1e6).toFixed(2) + 'M',
     mcap,
-    totalSupply,
   };
 }
 
-// ─── Render Dashboard ────────────────────────────────────────────────────────
+// ─── Render ──────────────────────────────────────────────────────────────────
 function renderDashboard(chain, data) {
   const c = CHAINS.find(ch => ch.id === chain);
-  const blobSection = c.hasBlob ? `
+  const blobCard = c.hasBlob && data.blobFee !== null ? `
     <div class="card">
       <div class="card-label">Blob Fee</div>
-      <div class="card-value purple">${data.blobFee}</div>
+      <div class="card-value purple">${data.blobFeeFmt}</div>
       <div class="card-sub">gwei · EIP-4844</div>
     </div>` : '';
+  const blobCardAlert = c.hasBlob && data.blobFee !== null && data.blobFee > config.thresholds[chain.id].blobFee ? 'border-color:#ef4444;' : '';
+
+  const utilColor = data.utilPct > 80 ? 'red' : data.utilPct > 50 ? 'yellow' : 'green';
+  const baseFeeColor = data.baseFee > config.thresholds[chain.id].baseFee ? 'red' : data.baseFee > 20 ? 'yellow' : 'green';
+  const gasColor = data.gas > config.thresholds[chain.id].gas ? 'red' : data.gas > 20 ? 'yellow' : 'green';
 
   return `<div class="chain-meta"><span class="chain-color" style="background:${c.color}"></span>${c.name} · <a href="${c.explorer}" style="color:#4b5563;text-decoration:none" target="_blank">${c.explorer.replace('https://','')}</a></div>
   <div class="grid">
     <div class="card">
       <div class="card-label">Latest Block</div>
-      <div class="card-value cyan">${data.block}</div>
+      <div class="card-value cyan">${data.blockFmt}</div>
       <div class="card-sub">${data.blockSub}</div>
     </div>
-    <div class="card">
+    <div class="card" style="${data.gas > config.thresholds[chain.id].gas ? 'border-color:#ef4444;' : ''}">
       <div class="card-label">Priority Fee</div>
-      <div class="card-value green">${data.gas}</div>
+      <div class="card-value ${gasColor}">${data.gasFmt}</div>
       <div class="card-sub">gwei · low</div>
     </div>
-    <div class="card">
+    <div class="card" style="${data.baseFee > config.thresholds[chain.id].baseFee ? 'border-color:#ef4444;' : ''}">
       <div class="card-label">Base Fee</div>
-      <div class="card-value ${data.baseFeeColor}">${data.baseFee}</div>
+      <div class="card-value ${baseFeeColor}">${data.baseFeeFmt}</div>
       <div class="card-sub">gwei</div>
     </div>
-    ${blobSection}
+    ${blobCard ? `<div class="card" style="${blobCardAlert}">${blobCard}</div>` : ''}
     <div class="card">
       <div class="card-label">Gas Util</div>
-      <div class="card-value ${data.utilColor}">${data.util}%</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${data.util}%;background:${data.utilColor==='red'?'#ef4444':data.utilColor==='yellow'?'#f59e0b':'#10b981'}"></div></div>
+      <div class="card-value ${utilColor}">${data.utilPct.toFixed(1)}%</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${data.utilPct}%;background:${utilColor==='red'?'#ef4444':utilColor==='yellow'?'#f59e0b':'#10b981'}"></div></div>
     </div>
     <div class="card">
       <div class="card-label">ETH Supply</div>
@@ -238,40 +433,282 @@ function renderDashboard(chain, data) {
 }
 
 function renderLoading() {
-  return `<div class="grid">
-    ${Array(6).fill('<div class="card loading"><div class="card-label">Loading...</div><div class="card-value">--</div></div>').join('')}
-  </div>`;
+  return `<div class="grid">${Array(6).fill('<div class="card loading"><div class="card-label">Loading...</div><div class="card-value">--</div></div>').join('')}</div>`;
 }
 
-// ─── Render Tabs ─────────────────────────────────────────────────────────────
 function renderTabs(chain) {
   document.getElementById('tabs').innerHTML = CHAINS.map(c =>
-    `<button class="chain-tab${c.id === chain ? ' active' : ''}" onclick="switchChain('${c.id}')">${c.icon} ${c.name}</button>`
+    `<button class="chain-tab${c.id === chain ? ' active' : ''}" onclick="switchChain('${c.id}')">${c.name}</button>`
   ).join('');
 }
 
-// ─── Refresh ─────────────────────────────────────────────────────────────────
+// ─── Alert System ────────────────────────────────────────────────────────────
+const ALERT_STATE_KEY = 'mcm_alert_state_v1';
+// alertState: { chainId_metric: lastAlertTimestamp }
+let alertState = {};
+
+function loadAlertState() {
+  try { alertState = JSON.parse(localStorage.getItem(ALERT_STATE_KEY)) || {}; } catch(e) { alertState = {}; }
+}
+function saveAlertState() {
+  try { localStorage.setItem(ALERT_STATE_KEY, JSON.stringify(alertState)); } catch(e) {}
+}
+
+async function sendTelegram(msg) {
+  if (!config.telegramToken || !config.telegramChatId) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${config.telegramToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: config.telegramChatId, text: msg, parse_mode: 'HTML' })
+    });
+  } catch(e) {}
+}
+
+async function sendEmail(subject, body) {
+  if (!config.smtpUser || !config.smtpPass || !config.smtpTo) return;
+  try {
+    // SMTP.js approach — load dynamically
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://smtpjs.com/v3/smtp.js?' + Date.now();
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    const msg = { To: config.smtpTo, From: config.smtpUser, Subject: subject, Body: body.replace(/\n/g, '<br>') };
+    await new Promise((resolve, reject) => {
+      // SMTPJS is loaded globally as Email
+      if (window.Email && window.Email.send) {
+        Email.send({ Host: config.smtpHost + ':' + config.smtpPort, Username: config.smtpUser, Password: config.smtpPass, To: msg.To, From: msg.From, Subject: msg.Subject, Body: msg.Body, tls: true })
+          .then(resolve).catch(reject);
+      } else {
+        reject(new Error('SMTPJS not loaded'));
+      }
+    });
+  } catch(e) { console.warn('Email send failed:', e); }
+}
+
+async function triggerAlert(chain, metric, value, threshold) {
+  if (!config.alertEnabled) return;
+
+  const now = Date.now();
+  const key = `${chain}_${metric}`;
+  const cooldownMs = config.cooldownMin * 60 * 1000;
+
+  if (alertState[key] && (now - alertState[key]) < cooldownMs) return;
+  alertState[key] = now;
+  saveAlertState();
+
+  const chainName = CHAINS.find(c => c.id === chain)?.name || chain;
+  const metricNames = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' };
+  const emoji = metric === 'gas' ? '⛽' : metric === 'baseFee' ? '📊' : '🟣';
+  const msg = `${emoji} <b>${chainName} Alert</b>\n${metricNames[metric]}: <b>${value}</b> > threshold ${threshold}`;
+
+  await Promise.all([
+    sendTelegram(msg),
+    sendEmail(`[MCM] ${chainName} ${metricNames[metric]} Alert`, `${chainName} ${metricNames[metric]} is ${value} (threshold: ${threshold})`),
+  ]);
+
+  addAlertLog(chain, metric, value, threshold);
+}
+
+function addAlertLog(chain, metric, value, threshold) {
+  const metricNames = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' };
+  const logEntry = {
+    time: new Date().toLocaleTimeString(),
+    chain: CHAINS.find(c => c.id === chain)?.name || chain,
+    metric: metricNames[metric] || metric,
+    value: typeof value === 'number' ? value.toFixed(3) : value,
+    threshold: typeof threshold === 'number' ? threshold.toFixed(3) : threshold,
+  };
+  config.alertLog.unshift(logEntry);
+  if (config.alertLog.length > 50) config.alertLog.pop();
+  saveConfig();
+  renderAlertLog();
+}
+
+function renderAlertLog() {
+  const count = config.alertLog.length;
+  document.getElementById('alertCount').textContent = count + ' alert' + (count !== 1 ? 's' : '');
+  if (count === 0) {
+    document.getElementById('alertLogBody').innerHTML = '<div class="alert-empty">No alerts yet</div>';
+    return;
+  }
+  document.getElementById('alertLogBody').innerHTML = config.alertLog.map(e =>
+    `<div class="alert-item">
+      <span class="alert-time">${e.time}</span>
+      <span class="alert-chain">${e.chain}</span>
+      <span class="alert-msg"><span class="metric">${e.metric}</span> ${e.value} > ${e.threshold}</span>
+    </div>`
+  ).join('');
+}
+
+// ─── Main Refresh ─────────────────────────────────────────────────────────────
 async function refresh() {
   document.getElementById('dashboard').innerHTML = renderLoading();
-  await fetchEthPrice();
-  const data = await fetchChainData(CHAINS.find(c => c.id === activeChain));
-  if (data) {
-    document.getElementById('dashboard').innerHTML = renderDashboard(activeChain, data);
-  }
+  await fetchPrice();
+  const chain = CHAINS.find(c => c.id === activeChain);
+  const data = await fetchChainData(chain);
+  if (!data) return;
+
+  document.getElementById('dashboard').innerHTML = renderDashboard(activeChain, data);
+
+  // Check alerts
+  const th = config.thresholds[activeChain];
+  if (data.gas      > th.gas)    triggerAlert(activeChain, 'gas',    data.gas,    th.gas);
+  if (data.baseFee  > th.baseFee) triggerAlert(activeChain, 'baseFee', data.baseFee, th.baseFee);
+  if (data.blobFee  !== null && th.blobFee > 0 && data.blobFee > th.blobFee)
+    triggerAlert(activeChain, 'blobFee', data.blobFee, th.blobFee);
+
   document.getElementById('updated').textContent = new Date().toLocaleTimeString();
 }
 
-// ─── Switch Chain ────────────────────────────────────────────────────────────
 window.switchChain = function(id) {
   activeChain = id;
   renderTabs(id);
   refresh();
 };
 
-// ─── Boot ───────────────────────────────────────────────────────────────────
+// ─── Alert Modal ─────────────────────────────────────────────────────────────
+function openAlertModal() {
+  loadAlertState();
+  document.getElementById('alertModal').style.display = 'flex';
+
+  // Populate fields
+  document.getElementById('alertEnabled').checked = config.alertEnabled;
+  document.getElementById('telegramToken').value = config.telegramToken || '';
+  document.getElementById('telegramChatId').value = config.telegramChatId || '';
+  document.getElementById('smtpHost').value = config.smtpHost || 'smtp.gmail.com';
+  document.getElementById('smtpPort').value = config.smtpPort || '587';
+  document.getElementById('smtpUser').value = config.smtpUser || '';
+  document.getElementById('smtpPass').value = config.smtpPass || '';
+  document.getElementById('smtpTo').value = config.smtpTo || '';
+  document.getElementById('cooldownMin').value = config.cooldownMin;
+  updateAlertToggle();
+
+  // Threshold chains
+  document.getElementById('thresholdChains').innerHTML = CHAINS.map(c => `
+    <div class="threshold-chain">
+      <div class="threshold-chain-name">${c.name}</div>
+      <div class="threshold-row"><label>Priority Fee &gt;</label><input id="th_${c.id}_gas" type="number" step="0.1" value="${config.thresholds[c.id]?.gas || 0}"> <span style="font-size:0.65rem;color:#4b5563">gwei</span></div>
+      <div class="threshold-row"><label>Base Fee &gt;</label><input id="th_${c.id}_baseFee" type="number" step="0.1" value="${config.thresholds[c.id]?.baseFee || 0}"> <span style="font-size:0.65rem;color:#4b5563">gwei</span></div>
+      ${c.hasBlob ? `<div class="threshold-row"><label>Blob Fee &gt;</label><input id="th_${c.id}_blobFee" type="number" step="0.001" value="${config.thresholds[c.id]?.blobFee || 0}"> <span style="font-size:0.65rem;color:#4b5563">gwei</span></div>` : ''}
+    </div>
+  `).join('');
+}
+
+function updateAlertToggle() {
+  const enabled = document.getElementById('alertEnabled').checked;
+  document.getElementById('toggleTrack').style.background = enabled ? '#3f0f0f' : '#1f2937';
+  document.getElementById('toggleThumb').style.background = enabled ? '#ef4444' : '#6b7280';
+  document.getElementById('toggleThumb').style.left = enabled ? '18px' : '2px';
+  document.getElementById('toggleLabel').textContent = enabled ? 'Enabled' : 'Disabled';
+  document.getElementById('alertIndicator').className = 'alert-indicator ' + (enabled ? 'on' : 'off');
+  document.getElementById('alertIndicator').textContent = enabled ? '🔔 Alerts On' : '🔔 Alerts Off';
+}
+
+function closeAlertModal() {
+  document.getElementById('alertModal').style.display = 'none';
+}
+
+function saveAlertConfig() {
+  config.alertEnabled = document.getElementById('alertEnabled').checked;
+  config.telegramToken = document.getElementById('telegramToken').value.trim();
+  config.telegramChatId = document.getElementById('telegramChatId').value.trim();
+  config.smtpHost = document.getElementById('smtpHost').value.trim();
+  config.smtpPort = document.getElementById('smtpPort').value.trim();
+  config.smtpUser = document.getElementById('smtpUser').value.trim();
+  config.smtpPass = document.getElementById('smtpPass').value;
+  config.smtpTo = document.getElementById('smtpTo').value.trim();
+  config.cooldownMin = parseInt(document.getElementById('cooldownMin').value) || 5;
+
+  CHAINS.forEach(c => {
+    if (!config.thresholds[c.id]) config.thresholds[c.id] = {};
+    config.thresholds[c.id].gas = parseFloat(document.getElementById('th_' + c.id + '_gas').value) || 0;
+    config.thresholds[c.id].baseFee = parseFloat(document.getElementById('th_' + c.id + '_baseFee').value) || 0;
+    if (c.hasBlob) config.thresholds[c.id].blobFee = parseFloat(document.getElementById('th_' + c.id + '_blobFee').value) || 0;
+  });
+
+  saveConfig();
+  updateAlertToggle();
+  closeAlertModal();
+  refresh();
+}
+
+function clearAlertLog() {
+  config.alertLog = [];
+  alertState = {};
+  saveConfig();
+  saveAlertState();
+  renderAlertLog();
+}
+
+async function testTelegram() {
+  const token = document.getElementById('telegramToken').value.trim();
+  const chatId = document.getElementById('telegramChatId').value.trim();
+  const status = document.getElementById('telegramStatus');
+  if (!token || !chatId) { status.textContent = 'Fill token + chat ID'; status.style.color = '#f87171'; return; }
+  status.textContent = 'Sending...'; status.style.color = '#6b7280';
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: '✅ Multi-Chain Monitor test message', parse_mode: 'HTML' })
+    }).then(r => r.json());
+    status.textContent = r.ok ? 'Sent!' : 'Error: ' + (r.description || 'failed');
+    status.style.color = r.ok ? '#10b981' : '#f87171';
+  } catch(e) { status.textContent = 'Network error'; status.style.color = '#f87171'; }
+}
+
+async function testEmail() {
+  const user = document.getElementById('smtpUser').value.trim();
+  const pass = document.getElementById('smtpPass').value;
+  const to = document.getElementById('smtpTo').value.trim();
+  const host = document.getElementById('smtpHost').value.trim();
+  const port = document.getElementById('smtpPort').value.trim();
+  const status = document.getElementById('emailStatus');
+  if (!user || !pass || !to) { status.textContent = 'Fill all fields'; status.style.color = '#f87171'; return; }
+  status.textContent = 'Sending...'; status.style.color = '#6b7280';
+  try {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://smtpjs.com/v3/smtp.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    const result = await Email.send({
+      Host: host + ':' + port, Username: user, Password: pass,
+      To: to, From: user, Subject: 'MCM Test Email', Body: 'Test from Multi-Chain Monitor ✅',
+      tls: true
+    });
+    status.textContent = result === 'OK' ? 'Sent!' : result;
+    status.style.color = result === 'OK' ? '#10b981' : '#f87171';
+  } catch(e) { status.textContent = 'Error: ' + e.message; status.style.color = '#f87171'; }
+}
+
+// ─── Settings Modal ──────────────────────────────────────────────────────────
+function openSettingsModal() {
+  document.getElementById('settingsModal').style.display = 'flex';
+  document.getElementById('settingInterval').value = Math.round(refreshInterval / 1000);
+}
+function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+function saveSettings() {
+  const secs = parseInt(document.getElementById('settingInterval').value) || 15;
+  refreshInterval = Math.max(5, Math.min(300, secs)) * 1000;
+  if (alertTimer) clearInterval(alertTimer);
+  alertTimer = setInterval(refresh, refreshInterval);
+  saveConfig();
+  closeSettingsModal();
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+loadConfig();
+loadAlertState();
 renderTabs(activeChain);
+updateAlertToggle();
+renderAlertLog();
 refresh();
-setInterval(refresh, 15000);
+alertTimer = setInterval(refresh, refreshInterval);
 </script>
 </body>
 </html>
