@@ -119,6 +119,30 @@
   .storage-meter { height: 4px; background: #1f2937; border-radius: 2px; margin-top: 4px; overflow: hidden; }
   .storage-fill { height: 100%; background: #6366f1; border-radius: 2px; transition: width 0.3s; }
   [hidden] { display: none !important; }
+
+  /* Meme tab */
+  .meme-header { background: #0d1117; border: 1px solid #161b22; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+  .meme-stats-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
+  .meme-stat { display: flex; flex-direction: column; gap: 2px; }
+  .meme-stat-label { font-size: 0.65rem; color: #6b7280; }
+  .meme-stat-value { font-size: 0.9rem; color: #e5e7eb; font-weight: 600; }
+  .meme-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .meme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .meme-card { background: #0d1117; border: 1px solid #161b22; border-radius: 8px; padding: 12px; transition: border-color 0.2s; cursor: pointer; }
+  .meme-card:hover { border-color: #6366f1; }
+  .meme-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .meme-card-name { font-size: 0.82rem; font-weight: 600; color: #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
+  .meme-card-sym { font-size: 0.72rem; color: #a5b4fc; }
+  .meme-card-img { width: 32px; height: 32px; border-radius: 50%; background: #1f2937; }
+  .meme-card-price { font-size: 0.78rem; color: #d1d5db; margin-bottom: 4px; }
+  .meme-card-mcap { font-size: 0.72rem; color: #6b7280; margin-bottom: 6px; }
+  .meme-card-row { display: flex; justify-content: space-between; font-size: 0.65rem; color: #4b5563; margin-bottom: 2px; }
+  .meme-card-row span:last-child { color: #9ca3af; }
+  .risk-honor { color: #22c55e; font-weight: 600; }
+  .risk-risk { color: #f87171; font-weight: 600; }
+  .bonded { color: #22c55e; }
+  .bonded-none { color: #6b7280; }
+
 </style>
 </head>
 <body>
@@ -135,6 +159,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchView('monitor')" id="tab-monitor">Monitor</button>
     <button class="tab" onclick="switchView('charts')" id="tab-charts">Charts</button>
+    <button class="tab" onclick="switchView('meme')" id="tab-meme">Meme</button>
   </div>
 
   <!-- Monitor View -->
@@ -161,6 +186,39 @@
   <!-- Charts View -->
   <div id="view-charts" hidden>
     <div class="chain-tabs" id="chartTabs"></div>
+  <!-- Meme View -->
+  <div id="view-meme" hidden>
+    <div class="meme-header">
+      <div class="meme-stats-row">
+        <div class="meme-stat">
+          <span class="meme-stat-label">Solana Pump.fun</span>
+          <span class="meme-stat-value" id="meme-total">--</span>
+        </div>
+        <div class="meme-stat">
+          <span class="meme-stat-label">Top Market Cap</span>
+          <span class="meme-stat-value" id="meme-top-mcap">--</span>
+        </div>
+        <div class="meme-stat">
+          <span class="meme-stat-label">Updated</span>
+          <span class="meme-stat-value" id="meme-updated">--</span>
+        </div>
+      </div>
+      <div class="meme-controls">
+        <select id="meme-sort" onchange="renderMemeTable()">
+          <option value="marketCap">Sort: Market Cap</option>
+          <option value="sniperRate">Sort: Sniper Rate</option>
+          <option value="holders">Sort: Holders</option>
+          <option value="price">Sort: Price</option>
+        </select>
+        <input id="meme-search" placeholder="Search..." oninput="renderMemeTable()" style="background:#111827;border:1px solid #1f2937;border-radius:4px;color:#e2e8f0;padding:3px 8px;font-size:0.72rem;width:140px;">
+        <button class="btn" onclick="refreshMemeData()">Refresh</button>
+      </div>
+    </div>
+    <div id="meme-loading" style="text-align:center;padding:40px;color:#6b7280;">Loading meme coins...</div>
+    <div id="meme-error" hidden style="text-align:center;padding:20px;color:#f87171;"></div>
+    <div id="meme-grid" hidden></div>
+  </div>
+
     <div class="metric-toggles">
       <button class="metric-toggle active" data-metric="gas" onclick="toggleMetric('gas')">⛽ Priority Fee</button>
       <button class="metric-toggle active" data-metric="baseFee" onclick="toggleMetric('baseFee')">📊 Base Fee</button>
@@ -637,12 +695,19 @@ function switchView(view) {
   currentView = view;
   document.getElementById('view-monitor').hidden = view !== 'monitor';
   document.getElementById('view-charts').hidden  = view !== 'charts';
+  document.getElementById('view-meme').hidden     = view !== 'meme';
   document.getElementById('tab-monitor').className = 'tab' + (view === 'monitor' ? ' active' : '');
   document.getElementById('tab-charts').className  = 'tab' + (view === 'charts'  ? ' active' : '');
+  document.getElementById('tab-meme').className    = 'tab' + (view === 'meme'    ? ' active' : '');
   if (view === 'charts') {
     updateBlobToggle();
     renderChart();
     updateStorageBar();
+  }
+  if (view === 'meme') {
+    refreshMemeData();
+    if (memeRefreshTimer) clearInterval(memeRefreshTimer);
+    memeRefreshTimer = setInterval(refreshMemeData, 30000);
   }
 }
 
@@ -902,6 +967,90 @@ function saveSettings() {
   alertTimer = setInterval(refresh, refreshInterval);
   saveConfig();
   closeSettingsModal();
+}
+
+
+// ─── Meme Tab ─────────────────────────────────────────────────────────────────
+let memeData = [];
+let memeRefreshTimer = null;
+
+async function refreshMemeData() {
+  const loading = document.getElementById('meme-loading');
+  const error = document.getElementById('meme-error');
+  const grid = document.getElementById('meme-grid');
+  if (loading) loading.hidden = false;
+  if (error) error.hidden = true;
+  if (grid) grid.hidden = true;
+  try {
+    const res = await fetch('http://localhost:8765/api/meme');
+    if (!res.ok) throw new Error('Proxy not running (localhost:8765)');
+    memeData = await res.json();
+    renderMemeTable();
+    document.getElementById('meme-total').textContent = memeData.length;
+    const top = memeData.reduce((best, t) => {
+      const mcap = parseFloat(t.marketCap) || 0;
+      return mcap > (parseFloat(best.marketCap) || 0) ? t : best;
+    }, memeData[0] || {});
+    document.getElementById('meme-top-mcap').textContent = fmtMCap(top.marketCap);
+    document.getElementById('meme-updated').textContent = new Date().toLocaleTimeString();
+    if (loading) loading.hidden = true;
+    if (grid) grid.hidden = false;
+  } catch(e) {
+    if (loading) loading.hidden = true;
+    if (error) { error.hidden = false; error.textContent = 'Error: ' + e.message + ' — start meme_proxy.py'; }
+  }
+}
+
+function renderMemeTable() {
+  const sortBy = document.getElementById('meme-sort')?.value || 'marketCap';
+  const search = (document.getElementById('meme-search')?.value || '').toLowerCase();
+  let rows = memeData.filter(t => {
+    if (!search) return true;
+    return (t.memeCoin?.name || '').toLowerCase().includes(search) ||
+           (t.memeCoin?.symbol || '').toLowerCase().includes(search);
+  });
+  rows.sort((a, b) => parseFloat(b[sortBy] || 0) - parseFloat(a[sortBy] || 0));
+  const grid = document.getElementById('meme-grid');
+  if (!grid) return;
+  grid.innerHTML = rows.map(t => {
+    const mc = parseFloat(t.marketCap) || 0;
+    const price = parseFloat(t.price) || 0;
+    const snipers = parseFloat(t.sniperRate) || 0;
+    const holders = parseInt(t.holders) || 0;
+    const bonded = t.memeCoin?.bondedBtn || false;
+    const risk = t.risk || 'unknown';
+    const name = t.memeCoin?.name || '?';
+    const sym = t.memeCoin?.symbol || '?';
+    const img = t.memeCoin?.imageUri || '';
+    const riskClass = risk === 'honor' ? 'risk-honor' : 'risk-risk';
+    const bondedClass = bonded ? 'bonded' : 'bonded-none';
+    return `<div class="meme-card" onclick="window.open('https://pump.fun/${t.memeCoin?.mint || ''}', '_blank')">
+  <div class="meme-card-top">
+    <div>
+      <div class="meme-card-name">${escHtml(name)}</div>
+      <div class="meme-card-sym">${escHtml(sym)}</div>
+    </div>
+    ${img ? `<img class="meme-card-img" src="${escHtml(img)}" onerror="this.style.display='none'" loading="lazy">` : ''}
+  </div>
+  <div class="meme-card-price">$${price < 0.001 ? price.toExponential(2) : price.toFixed(6)}</div>
+  <div class="meme-card-mcap">MCap: ${fmtMCap(mc)}</div>
+  <div class="meme-card-row"><span>Sniper Rate</span><span>${snipers.toFixed(1)}%</span></div>
+  <div class="meme-card-row"><span>Holders</span><span>${holders.toLocaleString()}</span></div>
+  <div class="meme-card-row"><span>Bonded</span><span class="${bondedClass}">${bonded ? 'Yes' : 'No'}</span></div>
+  <div class="meme-card-row"><span>Risk</span><span class="${riskClass}">${risk}</span></div>
+</div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtMCap(n) {
+  n = parseFloat(n) || 0;
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(0);
 }
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
