@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Chain Monitor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e17; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 20px 24px; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  h1 { font-size: 1.4rem; font-weight: 600; color: #818cf8; }
+  .chain-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chain-tab {
+    padding: 6px 16px; border-radius: 8px; border: 1px solid #1f2937;
+    background: #111827; color: #6b7280; cursor: pointer; font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .chain-tab:hover { border-color: #374151; color: #9ca3af; }
+  .chain-tab.active { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 18px; }
+  .card-label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .card-value { font-size: 1.6rem; font-weight: 700; }
+  .card-sub { font-size: 0.7rem; color: #4b5563; margin-top: 3px; }
+  .green { color: #10b981; } .red { color: #ef4444; } .yellow { color: #f59e0b; }
+  .purple { color: #a78bfa; } .orange { color: #fb923c; } .cyan { color: #22d3ee; }
+  .chain-color { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .eth-price-banner { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+  .eth-price-banner .label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
+  .eth-price-banner .price { font-size: 1.1rem; font-weight: 700; color: #fb923c; }
+  .eth-price-banner .change { font-size: 0.8rem; }
+  .progress-bar { height: 5px; background: #1f2937; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .footer { font-size: 0.65rem; color: #374151; margin-top: 20px; }
+  .chain-meta { font-size: 0.7rem; color: #4b5563; margin-bottom: 16px; }
+  .loading { opacity: 0.4; }
+  .chain-icon { width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Multi-Chain Monitor</h1>
+  <div class="chain-tabs" id="tabs"></div>
+</div>
+
+<div class="eth-price-banner">
+  <div><div class="label">ETH Price</div><div class="price" id="ethPrice">--</div></div>
+  <div><div class="label">24h Change</div><div class="change green" id="ethChange">--</div></div>
+  <div><div class="label">BTC Price</div><div class="price" id="btcPrice">--</div></div>
+  <div><div class="label">Updated</div><div class="change" id="updated">--</div></div>
+</div>
+
+<div id="dashboard"></div>
+
+<div class="footer">Auto-refreshes every 15s &middot; Supports Ethereum, Base, Arbitrum, Optimism &middot; ETH/BTC via CoinGecko</div>
+
+<script>
+// ─── Chain Registry ────────────────────────────────────────────────────────────
+const CHAINS = [
+  {
+    id: 'ethereum', name: 'Ethereum', symbol: 'ETH', color: '#627eea',
+    rpc: 'https://eth.llamarpc.com',
+    explorer: 'https://etherscan.io',
+    decimals: 18,
+    hasBlob: true,
+    icon: '🔷',
+  },
+  {
+    id: 'base', name: 'Base', symbol: 'ETH', color: '#0052ff',
+    rpc: 'https://mainnet.base.org',
+    explorer: 'https://basescan.org',
+    decimals: 18,
+    hasBlob: true,
+    icon: '🔵',
+  },
+  {
+    id: 'arbitrum', name: 'Arbitrum', symbol: 'ETH', color: '#28a0f0',
+    rpc: 'https://arb1.arbitrum.io/rpc',
+    explorer: 'https://arbiscan.io',
+    decimals: 18,
+    hasBlob: false,
+    icon: '🔷',
+  },
+  {
+    id: 'optimism', name: 'Optimism', symbol: 'ETH', color: '#ff0420',
+    rpc: 'https://mainnet.optimism.io',
+    explorer: 'https://optimistic.etherscan.io',
+    decimals: 18,
+    hasBlob: false,
+    icon: '🔴',
+  },
+];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let activeChain = 'ethereum';
+let ethPrice = null;
+
+// ─── RPC Helper ─────────────────────────────────────────────────────────────
+async function rpcCall(chain, method, params = []) {
+  try {
+    const r = await fetch(chain.rpc, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 })
+    }).then(r => r.json());
+    return r.result;
+  } catch(e) { return null; }
+}
+
+// ─── Fetch ETH Price ─────────────────────────────────────────────────────────
+async function fetchEthPrice() {
+  try {
+    const d = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin&vs_currencies=usd&include_24hr_change=true'
+    ).then(r => r.json());
+    ethPrice = d.ethereum.usd;
+    document.getElementById('ethPrice').textContent = '$' + d.ethereum.usd.toLocaleString();
+    const c = d.ethereum.usd_24h_change;
+    const el = document.getElementById('ethChange');
+    el.textContent = (c >= 0 ? '+' : '') + c.toFixed(2) + '%';
+    el.className = 'change ' + (c >= 0 ? 'green' : 'red');
+    document.getElementById('btcPrice').textContent = '$' + d.bitcoin.usd.toLocaleString();
+  } catch(e) { document.getElementById('ethPrice').textContent = 'Error'; }
+}
+
+// ─── Fetch Chain Data ────────────────────────────────────────────────────────
+async function fetchChainData(chain) {
+  const [block, feeHistory] = await Promise.all([
+    rpcCall(chain, 'eth_getBlockByNumber', ['latest', false]),
+    chain.hasBlob
+      ? rpcCall(chain, 'eth_feeHistory', ['0x4', 'latest', [50]])
+      : rpcCall(chain, 'eth_feeHistory', ['0x4', 'latest', [50]]),
+    rpcCall(chain, 'eth_totalSupply', []),
+  ]);
+
+  if (!block) return;
+
+  const bNum = parseInt(block.number, 16);
+  const ts = parseInt(block.timestamp, 16);
+  const gasUsed = parseInt(block.gasUsed, 16);
+  const gasLimit = parseInt(block.gasLimit, 16);
+  const utilPct = (gasUsed / gasLimit * 100).toFixed(1);
+  const txs = block.transactions.length;
+
+  // Base Fee
+  const baseFee = feeHistory ? parseInt(feeHistory.baseFeePerGas[feeHistory.baseFeePerGas.length - 1], 16) / 1e9 : 0;
+
+  // Priority Fee (median of rewards)
+  let priorityFee = 0;
+  if (feeHistory && feeHistory.reward) {
+    const rewards = feeHistory.reward.map(r => parseInt(r, 16) / 1e9).filter(r => r > 0);
+    if (rewards.length > 0) priorityFee = rewards.reduce((a, b) => a + b, 0) / rewards.length;
+  }
+
+  // Blob Fee
+  let blobFeeDisplay = 'N/A';
+  if (chain.hasBlob) {
+    try {
+      const blobFeeRaw = await rpcCall(chain, 'eth_getBlobPrice', []);
+      if (blobFeeRaw) {
+        const bf = parseInt(blobFeeRaw, 16) / 1e9;
+        blobFeeDisplay = bf > 0 ? bf.toFixed(4) : '0.001';
+      }
+    } catch(e) {
+      blobFeeDisplay = 'N/A';
+    }
+  }
+
+  // Supply
+  const supplyRaw = await rpcCall(chain, 'eth_totalSupply', []);
+  const totalSupply = supplyRaw ? parseInt(supplyRaw, 16) / Math.pow(10, chain.decimals) : 0;
+
+  // Market Cap
+  const mcap = ethPrice ? '$' + (totalSupply * ethPrice / 1e6).toFixed(2) + 'B' : '--';
+
+  const utilColor = utilPct > 80 ? 'red' : utilPct > 50 ? 'yellow' : 'green';
+  const baseFeeColor = baseFee > 50 ? 'red' : baseFee > 10 ? 'yellow' : 'green';
+
+  return {
+    block: bNum.toLocaleString(),
+    blockSub: `${txs} txs · ${utilPct}% gas · ${new Date(ts * 1000).toLocaleTimeString()}`,
+    gas: priorityFee.toFixed(3),
+    baseFee: baseFee.toFixed(3),
+    blobFee: blobFeeDisplay,
+    util: utilPct,
+    utilColor,
+    baseFeeColor,
+    supply: (totalSupply / 1e6).toFixed(2) + 'M',
+    mcap,
+    totalSupply,
+  };
+}
+
+// ─── Render Dashboard ────────────────────────────────────────────────────────
+function renderDashboard(chain, data) {
+  const c = CHAINS.find(ch => ch.id === chain);
+  const blobSection = c.hasBlob ? `
+    <div class="card">
+      <div class="card-label">Blob Fee</div>
+      <div class="card-value purple">${data.blobFee}</div>
+      <div class="card-sub">gwei · EIP-4844</div>
+    </div>` : '';
+
+  return `<div class="chain-meta"><span class="chain-color" style="background:${c.color}"></span>${c.name} · <a href="${c.explorer}" style="color:#4b5563;text-decoration:none" target="_blank">${c.explorer.replace('https://','')}</a></div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Latest Block</div>
+      <div class="card-value cyan">${data.block}</div>
+      <div class="card-sub">${data.blockSub}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Priority Fee</div>
+      <div class="card-value green">${data.gas}</div>
+      <div class="card-sub">gwei · low</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Base Fee</div>
+      <div class="card-value ${data.baseFeeColor}">${data.baseFee}</div>
+      <div class="card-sub">gwei</div>
+    </div>
+    ${blobSection}
+    <div class="card">
+      <div class="card-label">Gas Util</div>
+      <div class="card-value ${data.utilColor}">${data.util}%</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${data.util}%;background:${data.utilColor==='red'?'#ef4444':data.utilColor==='yellow'?'#f59e0b':'#10b981'}"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-label">ETH Supply</div>
+      <div class="card-value cyan">${data.supply}</div>
+      <div class="card-sub">million ETH</div>
+    </div>
+    <div class="card">
+      <div class="card-label">ETH Market Cap</div>
+      <div class="card-value orange">${data.mcap}</div>
+      <div class="card-sub">@ ETH price</div>
+    </div>
+  </div>`;
+}
+
+function renderLoading() {
+  return `<div class="grid">
+    ${Array(6).fill('<div class="card loading"><div class="card-label">Loading...</div><div class="card-value">--</div></div>').join('')}
+  </div>`;
+}
+
+// ─── Render Tabs ─────────────────────────────────────────────────────────────
+function renderTabs(chain) {
+  document.getElementById('tabs').innerHTML = CHAINS.map(c =>
+    `<button class="chain-tab${c.id === chain ? ' active' : ''}" onclick="switchChain('${c.id}')">${c.icon} ${c.name}</button>`
+  ).join('');
+}
+
+// ─── Refresh ─────────────────────────────────────────────────────────────────
+async function refresh() {
+  document.getElementById('dashboard').innerHTML = renderLoading();
+  await fetchEthPrice();
+  const data = await fetchChainData(CHAINS.find(c => c.id === activeChain));
+  if (data) {
+    document.getElementById('dashboard').innerHTML = renderDashboard(activeChain, data);
+  }
+  document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+}
+
+// ─── Switch Chain ────────────────────────────────────────────────────────────
+window.switchChain = function(id) {
+  activeChain = id;
+  renderTabs(id);
+  refresh();
+};
+
+// ─── Boot ───────────────────────────────────────────────────────────────────
+renderTabs(activeChain);
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
