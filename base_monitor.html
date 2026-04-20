@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base Chain Monitor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e17; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 24px; }
+  h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; color: #818cf8; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; }
+  .card-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .card-value { font-size: 1.75rem; font-weight: 700; }
+  .card-sub { font-size: 0.75rem; color: #6b7280; margin-top: 4px; }
+  .green { color: #10b981; }
+  .red { color: #ef4444; }
+  .yellow { color: #f59e0b; }
+  .purple { color: #a78bfa; }
+  .orange { color: #fb923c; }
+  .cyan { color: #22d3ee; }
+  .status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .footer { font-size: 0.7rem; color: #374151; margin-top: 24px; }
+  .eth-price { font-size: 1rem; }
+  .progress-bar { height: 6px; background: #1f2937; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+</style>
+</head>
+<body>
+<h1><span class="status"></span>Base Chain Monitor</h1>
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Latest Block</div>
+    <div class="card-value cyan" id="block">--</div>
+    <div class="card-sub" id="blockTime">--</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Gas Price</div>
+    <div class="card-value green" id="gas">--</div>
+    <div class="card-sub">gwei</div>
+  </div>
+  <div class="card">
+    <div class="card-label">ETH Price</div>
+    <div class="card-value orange eth-price" id="eth">--</div>
+    <div class="card-sub" id="ethChange">--</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Base Fee</div>
+    <div class="card-value yellow" id="baseFee">--</div>
+    <div class="card-sub">gwei</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Blob Fee</div>
+    <div class="card-value purple" id="blobFee">--</div>
+    <div class="card-sub">gwei</div>
+  </div>
+  <div class="card">
+    <div class="card-label">ETH Supply</div>
+    <div class="card-value cyan" id="supply">--</div>
+    <div class="card-sub">million ETH</div>
+  </div>
+</div>
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Gas Utilization</div>
+    <div class="card-value" id="util">--</div>
+    <div class="progress-bar"><div class="progress-fill" id="utilBar" style="width:0%;background:#10b981;"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-label">ETH Market Cap</div>
+    <div class="card-value" id="mcap">--</div>
+    <div class="card-sub">@ ETH price above</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Last Updated</div>
+    <div class="card-value" style="font-size:1rem;" id="updated">--</div>
+  </div>
+</div>
+<div class="footer">Auto-refreshes every 15s &middot; Powered by Base RPC + CoinGecko</div>
+<script>
+const RPC = 'https://mainnet.base.org';
+const COINGECKO = 'https://api.coingecko.com/api/v3';
+
+function fmt(n, d=2) { return Number(n).toFixed(d); }
+function abbr(n) {
+  n = Number(n);
+  if (n >= 1e12) return (n/1e12).toFixed(2)+'T';
+  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(2)+'K';
+  return n.toFixed(2);
+}
+
+async function fetchBlock() {
+  try {
+    const block = await fetch(RPC, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1})
+    }).then(r=>r.json());
+    const b = parseInt(block.result.number, 16);
+    const ts = parseInt(block.result.timestamp, 16);
+    const txs = block.result.transactions.length;
+    const gasUsed = parseInt(block.result.gasUsed, 16);
+    const gasLimit = parseInt(block.result.gasLimit, 16);
+    const util = (gasUsed/gasLimit*100).toFixed(1);
+    document.getElementById('block').textContent = b.toLocaleString();
+    document.getElementById('blockTime').textContent = `${txs} txs &middot; ${util}% gas &middot; ${new Date(ts*1000).toLocaleTimeString()}`;
+    const utilPct = parseFloat(util);
+    document.getElementById('util').textContent = utilPct + '%';
+    document.getElementById('util').className = 'card-value ' + (utilPct>80?'red':utilPct>50?'yellow':'green');
+    document.getElementById('utilBar').style.width = utilPct + '%';
+    document.getElementById('utilBar').style.background = utilPct>80?'#ef4444':utilPct>50?'#f59e0b':'#10b981';
+    return b;
+  } catch(e) { document.getElementById('block').textContent = 'Error'; }
+}
+
+async function fetchGas() {
+  try {
+    const feeHistory = await fetch(RPC, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({"jsonrpc":"2.0","method":"eth_feeHistory","params":["0x4","latest",[50]],"id":1})
+    }).then(r=>r.json());
+    const baseFee = feeHistory.result.baseFeePerGas;
+    const rewards = feeHistory.result.reward;
+    const bf = parseInt(baseFee, 16) / 1e9;
+    const low = Math.min(...rewards.map(r=>parseInt(r,16)/1e9));
+    const mid = rewards.reduce((a,r)=>a+parseInt(r,16)/1e9,0)/rewards.length;
+    document.getElementById('gas').textContent = low.toFixed(3);
+    document.getElementById('baseFee').textContent = bf.toFixed(3);
+    return bf;
+  } catch(e) { document.getElementById('gas').textContent = 'Error'; }
+}
+
+async function fetchBlobFee() {
+  try {
+    const blob = await fetch(RPC, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({"jsonrpc":"2.0","method":"eth_getBlobPrice","params":[],"id":1})
+    }).then(r=>r.json());
+    const fee = parseInt(blob.result, 16) / 1e9;
+    document.getElementById('blobFee').textContent = fee > 0 ? fee.toFixed(4) : '0.0001';
+  } catch(e) {
+    try {
+      const b = await fetch(RPC, {
+        method: 'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1})
+      }).then(r=>r.json());
+      const x = b.result.excessBlobGas;
+      if (x) {
+        const excess = parseInt(x, 16);
+        const fee = Math.max(1, Math.exp(-excess/10000000)) * 0.001;
+        document.getElementById('blobFee').textContent = fee.toFixed(4);
+      }
+    } catch(e2) { document.getElementById('blobFee').textContent = 'N/A'; }
+  }
+}
+
+async function fetchEth() {
+  try {
+    const d = await fetch(`${COINGECKO}/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true`).then(r=>r.json());
+    const p = d.ethereum.usd;
+    const c = d.ethereum.usd_24h_change;
+    document.getElementById('eth').textContent = '$' + p.toLocaleString();
+    document.getElementById('ethChange').textContent = (c>=0?'+':'') + c.toFixed(2) + '% 24h';
+    document.getElementById('ethChange').className = 'card-sub ' + (c>=0?'green':'red');
+    return p;
+  } catch(e) { document.getElementById('eth').textContent = '$--'; }
+}
+
+async function fetchSupply() {
+  try {
+    const sup = await fetch(RPC, {
+      method: 'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({"jsonrpc":"2.0","method":"eth_totalSupply","params":[],"id":1})
+    }).then(r=>r.json());
+    const s = parseInt(sup.result, 16) / 1e18;
+    document.getElementById('supply').textContent = (s/1e6).toFixed(2) + 'M';
+    const p = document.getElementById('eth').textContent.replace('$','').replace(/,/g,'');
+    if (p && p!='--') {
+      const mcap = (s * parseFloat(p));
+      document.getElementById('mcap').textContent = '$' + abbr(mcap);
+    }
+  } catch(e) {}
+}
+
+async function refresh() {
+  await Promise.all([fetchBlock(), fetchGas(), fetchBlobFee(), fetchEth(), fetchSupply()]);
+  document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+}
+
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
