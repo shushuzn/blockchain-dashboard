@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const { connectRedis, isRedisConnected } = require('./src/config/redis')
 const { notFoundHandler, globalErrorHandler, logError } = require('./src/utils/errors')
+const { middleware: metricsMiddleware, getMetrics } = require('./src/utils/metrics')
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -48,6 +49,7 @@ const corsOptions = {
 app.use(helmet(helmetOptions))
 app.use(cors(corsOptions))
 app.use(express.json({ limit: '10kb' }))
+app.use(metricsMiddleware)
 
 morgan.token('request-id', (req) => req.get('x-request-id') || '-')
 app.use(morgan(':method :url :status :response-time ms - :res[content-length] [:request-id]'))
@@ -77,6 +79,10 @@ app.get('/api/health', (req, res) => {
     cache: isRedisConnected() ? 'connected' : 'disconnected',
     version: process.env.npm_package_version || '1.0.0'
   })
+})
+
+app.get('/api/metrics', (req, res) => {
+  res.json(getMetrics())
 })
 
 app.use(notFoundHandler)
