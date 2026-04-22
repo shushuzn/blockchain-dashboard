@@ -18,11 +18,13 @@ const historyRoutes = require('./src/routes/history')
 const configRoutes = require('./src/routes/config')
 const alertRoutes = require('./src/routes/alerts')
 const memeRoutes = require('./src/routes/meme')
+const lidoRoutes = require('./src/routes/lido')
 
 app.use('/api/history', historyRoutes)
 app.use('/api/config', configRoutes)
 app.use('/api/alerts', alertRoutes)
 app.use('/api/meme', memeRoutes)
+app.use('/api/lido', lidoRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -52,6 +54,7 @@ app.listen(PORT, () => {
   console.log(`  POST /api/config - Save user config`)
   console.log(`  POST /api/alerts - Trigger alert`)
   console.log(`  GET /api/meme - Get Solana meme coins`)
+  console.log(`  GET /api/lido - Get Lido TVL metrics`)
 })
 
 module.exports = app

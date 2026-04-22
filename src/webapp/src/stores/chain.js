@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { historyApi } from '../api'
 
 const CHAINS = [
   { id: 'ethereum',  name: 'Ethereum',   color: '#627eea', rpc: 'https://eth.llamarpc.com',       explorer: 'https://etherscan.io',            decimals: 18, hasBlob: true, hasMEV: true },
@@ -10,6 +11,9 @@ const CHAINS = [
   { id: 'polygon',   name: 'Polygon',     color: '#8247E5', rpc: 'https://polygon-rpc.com',        explorer: 'https://polygonscan.com',         decimals: 18, hasBlob: false, hasMEV: false },
 ]
 
+const OFFLINE_MODE_KEY = 'mcm_offline_mode'
+const HISTORY_KEY = 'mcm_history_v2'
+
 export const useChainStore = defineStore('chain', {
   state: () => ({
     chains: CHAINS,
@@ -19,6 +23,7 @@ export const useChainStore = defineStore('chain', {
     btcPrice: '$--',
     lastUpdated: '--',
     history: {},
+    historyFromApi: false,
     refreshInterval: 15000,
     sampleInterval: 15,
     alertTimer: null,
@@ -60,7 +65,6 @@ export const useChainStore = defineStore('chain', {
         this.rpcCall(chain.rpc, 'eth_totalSupply', [])
       ]
       
-      // Add MEV data for supported chains
       if (chain.hasMEV) {
         promises.push(this.fetchMEVData(chain))
       }
@@ -103,7 +107,8 @@ export const useChainStore = defineStore('chain', {
         blobFee: blobFee, blobFeeFmt: blobFee !== null ? blobFee.toFixed(4) : 'N/A',
         utilPct, utilPctFmt: utilPct.toFixed(1),
         supply: (totalSupply / 1e6).toFixed(2) + 'M',
-        mcap
+        mcap,
+        mevData
       }
     },
 
@@ -124,32 +129,90 @@ export const useChainStore = defineStore('chain', {
       }
     },
 
-    loadHistory() {
+    async loadHistory(chainId = null, days = 7) {
       try {
-        const history = localStorage.getItem('mcm_history_v2')
-        if (history) {
-          this.history = JSON.parse(history)
+        const history = await historyApi.getHistory(chainId || this.activeChain, days)
+        if (chainId) {
+          this.history[chainId] = history
+        } else {
+          this.history = { [this.activeChain]: history }
+        }
+        this.historyFromApi = true
+      } catch (error) {
+        console.warn('Failed to load history from API, using localStorage:', error.message)
+        this.loadHistoryFromLocal()
+        this.historyFromApi = false
+      }
+    },
+
+    loadHistoryFromLocal() {
+      try {
+        const stored = localStorage.getItem(HISTORY_KEY)
+        if (stored) {
+          this.history = JSON.parse(stored)
         }
       } catch(e) {
         this.history = {}
       }
     },
 
-    loadConfig() {
+    async saveHistoryPoint(chainId, point) {
+      if (!this.history[chainId]) {
+        this.history[chainId] = []
+      }
+
+      const sampleMs = this.sampleInterval * 60 * 1000
+      const bucket = Math.floor(point.t / sampleMs) * sampleMs
+      const arr = this.history[chainId]
+      const existing = arr.findIndex(p => Math.floor(p.t / sampleMs) * sampleMs === bucket)
+
+      if (existing >= 0) {
+        arr[existing] = point
+      } else {
+        arr.push(point)
+      }
+
+      this.trimHistory(chainId)
+
+      if (this.historyFromApi) {
+        try {
+          await historyApi.addHistoryPoint(
+            chainId,
+            point.t,
+            point.gas,
+            point.baseFee,
+            point.blobFee,
+            point.util
+          )
+        } catch (error) {
+          console.warn('Failed to save to API, saving locally:', error.message)
+          this.saveHistoryToLocal()
+        }
+      } else {
+        this.saveHistoryToLocal()
+      }
+    },
+
+    trimHistory(chainId) {
+      const maxPoints = Math.floor((7 * 24 * 60) / this.sampleInterval) + 20
+      if (this.history[chainId]?.length > maxPoints) {
+        this.history[chainId] = this.history[chainId].slice(-maxPoints)
+      }
+    },
+
+    saveHistoryToLocal() {
       try {
-        const config = localStorage.getItem('mcm_config_v3')
-        if (config) {
-          const parsed = JSON.parse(config)
-          // Load config if needed
+        const data = JSON.stringify(this.history)
+        if (data.length < 4 * 1024 * 1024) {
+          localStorage.setItem(HISTORY_KEY, data)
         }
       } catch(e) {
-        // Default config
+        console.warn('Failed to save history locally:', e.message)
       }
     },
 
     async fetchMEVData(chain) {
       try {
-        // Use flashbots API for MEV data
         const response = await fetch(`https://api.flashbots.net/v2/blocks?limit=1&chain_id=${chain.id === 'ethereum' ? '1' : chain.id === 'arbitrum' ? '42161' : '10'}`)
         const data = await response.json()
         
