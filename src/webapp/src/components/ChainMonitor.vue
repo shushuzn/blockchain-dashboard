@@ -1,15 +1,25 @@
 <template>
   <div class="monitor-view">
-    <div class="chain-tabs">
-      <button 
-        v-for="chain in chains" 
-        :key="chain.id"
-        class="chain-tab" 
-        :class="{ active: activeChain === chain.id }"
-        @click="switchChain(chain.id)"
-      >
-        {{ chain.name }}
-      </button>
+    <div class="monitor-header">
+      <div class="chain-tabs">
+        <button 
+          v-for="chain in chains" 
+          :key="chain.id"
+          class="chain-tab" 
+          :class="{ active: activeChain === chain.id }"
+          @click="switchChain(chain.id)"
+        >
+          {{ chain.name }}
+        </button>
+      </div>
+      <div class="monitor-actions">
+        <button class="btn btn-alert" @click="openAlertModal">
+          🔔 Alerts
+        </button>
+        <button class="btn" @click="refreshData">
+          🔄
+        </button>
+      </div>
     </div>
 
     <div class="eth-banner">
@@ -119,6 +129,8 @@
         <div class="alert-empty">No alerts yet</div>
       </div>
     </div>
+
+    <AlertModal :show="showAlertModal" @close="showAlertModal = false" />
   </div>
 </template>
 
@@ -126,6 +138,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useChainStore } from '../stores/chain'
 import { useConfigStore } from '../stores/config'
+import AlertModal from './AlertModal.vue'
 
 const chainStore = useChainStore()
 const configStore = useConfigStore()
@@ -133,6 +146,7 @@ const configStore = useConfigStore()
 const activeChain = ref('ethereum')
 const loading = ref(false)
 const chainData = ref(null)
+const showAlertModal = ref(false)
 
 const chains = computed(() => chainStore.chains)
 const ethPrice = computed(() => chainStore.ethPrice)
@@ -179,6 +193,14 @@ const switchChain = (chainId) => {
   loadChainData()
 }
 
+const openAlertModal = () => {
+  showAlertModal.value = true
+}
+
+const refreshData = () => {
+  loadChainData()
+}
+
 const loadChainData = async () => {
   loading.value = true
   try {
@@ -200,6 +222,46 @@ onMounted(() => {
 <style scoped>
 .monitor-view {
   padding: 0;
+}
+
+.monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monitor-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #1f2937;
+  background: #111827;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: all 0.15s;
+}
+
+.btn:hover {
+  border-color: #374151;
+  color: #e2e8f0;
+}
+
+.btn-alert {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-alert:hover {
+  background: #1f0a0a;
 }
 
 .eth-banner {

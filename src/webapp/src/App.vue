@@ -6,8 +6,8 @@
         <span class="alert-indicator" :class="{ on: configStore.alertEnabled, off: !configStore.alertEnabled }">
           🔔 {{ configStore.alertEnabled ? 'Alerts On' : 'Alerts Off' }}
         </span>
-        <button class="btn btn-alert" @click="openAlertModal">🔔 Alerts</button>
-        <button class="btn" @click="openSettingsModal">⚙</button>
+        <button class="btn btn-alert" @click="showAlertModal = true">🔔 Alerts</button>
+        <button class="btn" @click="showSettingsModal = true">⚙</button>
       </div>
     </header>
 
@@ -28,24 +28,29 @@
     <div class="footer">
       Auto-refreshes every 15s &middot; Charts sampled every 15min &middot; ETH/BTC via CoinGecko
     </div>
+
+    <AlertModal :show="showAlertModal" @close="showAlertModal = false" />
+    <SettingsModal :show="showSettingsModal" @close="showSettingsModal = false" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import ChainMonitor from './components/ChainMonitor.vue'
 import ChartsView from './components/ChartsView.vue'
 import MemeView from './components/MemeView.vue'
 import CustomDashboard from './components/CustomDashboard.vue'
+import AlertModal from './components/AlertModal.vue'
+import SettingsModal from './components/SettingsModal.vue'
 import { useConfigStore } from './stores/config'
 import { useChainStore } from './stores/chain'
 
-const router = useRouter()
 const configStore = useConfigStore()
 const chainStore = useChainStore()
 
 const currentTab = ref('monitor')
+const showAlertModal = ref(false)
+const showSettingsModal = ref(false)
 const tabs = [
   { id: 'monitor', name: 'Monitor' },
   { id: 'charts', name: 'Charts' },
@@ -65,14 +70,6 @@ const currentComponent = computed(() => {
 
 const switchTab = (tabId) => {
   currentTab.value = tabId
-}
-
-const openAlertModal = () => {
-  // Alert modal logic
-}
-
-const openSettingsModal = () => {
-  // Settings modal logic
 }
 
 onMounted(() => {
