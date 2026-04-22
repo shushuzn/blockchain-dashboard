@@ -42,6 +42,8 @@ import MemeView from './components/MemeView.vue'
 import CustomDashboard from './components/CustomDashboard.vue'
 import AlertModal from './components/AlertModal.vue'
 import SettingsModal from './components/SettingsModal.vue'
+import LidoView from './components/LidoView.vue'
+import AaveView from './components/AaveView.vue'
 import { useConfigStore } from './stores/config'
 import { useChainStore } from './stores/chain'
 
@@ -55,18 +57,19 @@ const tabs = [
   { id: 'monitor', name: 'Monitor' },
   { id: 'charts', name: 'Charts' },
   { id: 'meme', name: 'Meme' },
-  { id: 'dashboard', name: 'Dashboard' }
+  { id: 'dashboard', name: 'Dashboard' },
+  { id: 'lido', name: 'Lido' },
+  { id: 'aave', name: 'Aave' }
 ]
 
-const currentComponent = computed(() => {
-  const components = {
-    monitor: ChainMonitor,
-    charts: ChartsView,
-    meme: MemeView,
-    dashboard: CustomDashboard
-  }
-  return components[currentTab.value]
-})
+const components = {
+  monitor: ChainMonitor,
+  charts: ChartsView,
+  meme: MemeView,
+  dashboard: CustomDashboard,
+  lido: LidoView,
+  aave: AaveView
+}
 
 const switchTab = (tabId) => {
   currentTab.value = tabId

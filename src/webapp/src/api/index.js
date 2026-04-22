@@ -78,4 +78,10 @@ export const lidoApi = {
   }
 }
 
+export const aaveApi = {
+  getMetrics() {
+    return apiClient.get('/aave')
+  }
+}
+
 export default apiClient
