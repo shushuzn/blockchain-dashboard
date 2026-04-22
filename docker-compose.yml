@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Backend API service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./dist:/app/dist
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - DATABASE_URL=sqlite:///database.db
+      - ONCHAINOS_PATH=/usr/local/bin/onchainos
+      - JWT_SECRET=blockchain-dashboard-secret-key
+      - ENCRYPTION_KEY=blockchain-dashboard-encryption-key
+    restart: unless-stopped
+  
+  # Frontend development server
+  frontend:
+    build:
+      context: ./src/webapp
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src/webapp:/app
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api
+    restart: unless-stopped
+    depends_on:
+      - backend
