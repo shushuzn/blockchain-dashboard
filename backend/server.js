@@ -54,6 +54,8 @@ app.use(metricsMiddleware)
 morgan.token('request-id', (req) => req.get('x-request-id') || '-')
 app.use(morgan(':method :url :status :response-time ms - :res[content-length] [:request-id]'))
 
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpec = require('./src/config/swagger')
 const historyRoutes = require('./src/routes/history')
 const configRoutes = require('./src/routes/config')
 const alertRoutes = require('./src/routes/alerts')
@@ -88,6 +90,19 @@ app.get('/api/health', (req, res) => {
 app.get('/api/metrics', (req, res) => {
   res.json(getMetrics())
 })
+
+/**
+ * @swagger
+ * /api/docs:
+ *   get:
+ *     summary: API documentation
+ *     description: Swagger UI for API documentation
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Swagger UI page
+ */
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 app.use(notFoundHandler)
 app.use(globalErrorHandler)

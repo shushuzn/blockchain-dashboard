@@ -4,15 +4,19 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   test: {
-    globals: true,
     environment: 'happy-dom',
-    include: ['src/**/*.{test,spec}.{js,ts}'],
+    globals: true,
+    include: ['src/**/*.spec.js', 'src/**/*.test.js'],
+    exclude: ['e2e/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.{js,vue}'],
-      exclude: ['src/**/*.stories.{js,ts}']
+      exclude: [
+        'node_modules/',
+        'src/**/*.spec.js',
+        'src/**/*.test.js',
+        'src/stores/**',
+      ],
     },
-    setupFiles: ['./src/test/setup.js']
-  }
+  },
 })
