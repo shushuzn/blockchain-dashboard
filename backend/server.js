@@ -7,6 +7,7 @@ const { connectRedis, isRedisConnected } = require('./src/config/redis')
 const { notFoundHandler, globalErrorHandler, logError } = require('./src/utils/errors')
 const { middleware: metricsMiddleware, getMetrics } = require('./src/utils/metrics')
 const { i18nMiddleware } = require('./src/utils/i18n')
+const { createGraphQLServer, expressMiddleware: graphqlExpressMiddleware } = require('./src/graphql/server')
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -79,6 +80,18 @@ app.use('/api/webhook', webhookRoutes)
 app.use('/api/export', exportRoutes)
 app.use('/api/push', pushRoutes)
 app.use('/api/auth', authRoutes)
+
+async function initGraphQL() {
+  try {
+    const { createGraphQLServer } = require('./src/graphql/server')
+    const graphqlServer = await createGraphQLServer()
+    app.use('/graphql', express.json(), graphqlExpressMiddleware(graphqlServer))
+    console.log('GraphQL endpoint ready at /graphql')
+  } catch (err) {
+    console.error('Failed to initialize GraphQL server:', err.message)
+  }
+}
+initGraphQL()
 
 app.get('/api/health', (req, res) => {
   res.json({ 

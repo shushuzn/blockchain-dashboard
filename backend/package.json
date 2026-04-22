@@ -29,7 +29,11 @@
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.0"
+    "swagger-ui-express": "^5.0.0",
+    "@apollo/server": "^4.10.0",
+    "@as-integrations/express": "^1.1.0",
+    "graphql": "^16.8.0",
+    "graphql-tag": "^2.12.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",
