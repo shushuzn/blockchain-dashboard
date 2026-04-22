@@ -20,12 +20,14 @@ const configRoutes = require('./src/routes/config')
 const alertRoutes = require('./src/routes/alerts')
 const memeRoutes = require('./src/routes/meme')
 const lidoRoutes = require('./src/routes/lido')
+const aaveRoutes = require('./src/routes/aave')
 
 app.use('/api/history', historyRoutes)
 app.use('/api/config', configRoutes)
 app.use('/api/alerts', alertRoutes)
 app.use('/api/meme', memeRoutes)
 app.use('/api/lido', lidoRoutes)
+app.use('/api/aave', aaveRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -76,6 +78,8 @@ async function startServer() {
     console.log('   GET  /api/meme      - Get Solana meme coins')
     console.log('   GET  /api/lido      - Get Lido TVL metrics (cached)')
     console.log('   POST /api/lido/refresh - Force refresh Lido cache')
+    console.log('   GET  /api/aave      - Get Aave TVL metrics (cached)')
+    console.log('   POST /api/aave/refresh - Force refresh Aave cache')
     console.log('='.repeat(50))
   })
 }
