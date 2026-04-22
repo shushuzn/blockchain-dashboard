@@ -6,6 +6,7 @@ const morgan = require('morgan')
 const { connectRedis, isRedisConnected } = require('./src/config/redis')
 const { notFoundHandler, globalErrorHandler, logError } = require('./src/utils/errors')
 const { middleware: metricsMiddleware, getMetrics } = require('./src/utils/metrics')
+const { i18nMiddleware } = require('./src/utils/i18n')
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -50,6 +51,7 @@ app.use(helmet(helmetOptions))
 app.use(cors(corsOptions))
 app.use(express.json({ limit: '10kb' }))
 app.use(metricsMiddleware)
+app.use(i18nMiddleware)
 
 morgan.token('request-id', (req) => req.get('x-request-id') || '-')
 app.use(morgan(':method :url :status :response-time ms - :res[content-length] [:request-id]'))

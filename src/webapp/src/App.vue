@@ -2,12 +2,13 @@
   <ErrorBoundary>
     <div class="app">
       <header class="header">
-        <h1>Blockchain Dashboard</h1>
+        <h1>{{ $t('dashboard.title') }}</h1>
         <div class="header-right">
+          <LanguageSelector />
           <span class="alert-indicator" :class="{ on: configStore.alertEnabled, off: !configStore.alertEnabled }">
-            🔔 {{ configStore.alertEnabled ? 'Alerts On' : 'Alerts Off' }}
+            🔔 {{ configStore.alertEnabled ? $t('alerts.enableAlerts') : $t('common.none') }}
           </span>
-          <button class="btn btn-alert" @click="showAlertModal = true">🔔 Alerts</button>
+          <button class="btn btn-alert" @click="showAlertModal = true">🔔 {{ $t('alerts.title') }}</button>
           <button class="btn" @click="showSettingsModal = true">⚙</button>
         </div>
       </header>
@@ -53,7 +54,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ChainMonitor from './components/ChainMonitor.vue'
 import ChartsView from './components/ChartsView.vue'
 import MemeView from './components/MemeView.vue'
@@ -65,9 +67,12 @@ import AaveView from './components/AaveView.vue'
 import AlertHistory from './components/AlertHistory.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import ToastContainer from './components/Toast.vue'
+import LanguageSelector from './components/LanguageSelector.vue'
 import { useToast } from './composables/useToast'
 import { useConfigStore } from './stores/config'
 import { useChainStore } from './stores/chain'
+
+const { t } = useI18n()
 
 const configStore = useConfigStore()
 const chainStore = useChainStore()
@@ -76,15 +81,15 @@ const { toasts, removeToast, getIcon } = useToast()
 const currentTab = ref('monitor')
 const showAlertModal = ref(false)
 const showSettingsModal = ref(false)
-const tabs = [
-  { id: 'monitor', name: 'Monitor' },
-  { id: 'charts', name: 'Charts' },
-  { id: 'meme', name: 'Meme' },
-  { id: 'dashboard', name: 'Dashboard' },
-  { id: 'alerts', name: 'Alerts' },
-  { id: 'lido', name: 'Lido' },
-  { id: 'aave', name: 'Aave' }
-]
+const tabs = computed(() => [
+  { id: 'monitor', name: t('nav.dashboard') },
+  { id: 'charts', name: t('nav.charts') },
+  { id: 'meme', name: t('meme.title') },
+  { id: 'dashboard', name: t('common.dashboard') },
+  { id: 'alerts', name: t('nav.alerts') },
+  { id: 'lido', name: t('defi.lido') },
+  { id: 'aave', name: t('defi.aave') }
+])
 
 const components = {
   monitor: ChainMonitor,
