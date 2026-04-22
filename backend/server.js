@@ -8,10 +8,46 @@ const { notFoundHandler, globalErrorHandler, logError } = require('./src/utils/e
 
 const app = express()
 const PORT = process.env.PORT || 8000
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['http://localhost:3000', 'http://localhost:5173']
 
-app.use(helmet())
-app.use(cors())
-app.use(express.json())
+const helmetOptions = {
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", "https://api.coingecko.com", "https://api.thegraph.com", "https://eth.llamarpc.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  methods: ['GET', 'POST', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID'],
+  credentials: true,
+  maxAge: 86400
+}
+
+app.use(helmet(helmetOptions))
+app.use(cors(corsOptions))
+app.use(express.json({ limit: '10kb' }))
 
 morgan.token('request-id', (req) => req.get('x-request-id') || '-')
 app.use(morgan(':method :url :status :response-time ms - :res[content-length] [:request-id]'))
@@ -47,6 +83,7 @@ async function startServer() {
   console.log('Blockchain Dashboard Backend')
   console.log('='.repeat(50))
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+  console.log(`Allowed Origins: ${ALLOWED_ORIGINS.join(', ')}`)
   
   console.log('Connecting to Redis...')
   await connectRedis()
