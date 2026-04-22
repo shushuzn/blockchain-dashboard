@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const { connectRedis, isRedisConnected } = require('./src/config/redis')
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -28,7 +29,11 @@ app.use('/api/lido', lidoRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    cache: isRedisConnected() ? 'connected' : 'disconnected'
+  })
 })
 
 // 404 handler
@@ -43,18 +48,38 @@ app.use((err, req, res, next) => {
 })
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log(`Health check: http://localhost:${PORT}/api/health`)
-  console.log(`API routes:`)
-  console.log(`  GET /api/health - Health check`)
-  console.log(`  GET /api/history - Get chain history data`)
-  console.log(`  POST /api/history - Add history data`)
-  console.log(`  GET /api/config - Get user config`)
-  console.log(`  POST /api/config - Save user config`)
-  console.log(`  POST /api/alerts - Trigger alert`)
-  console.log(`  GET /api/meme - Get Solana meme coins`)
-  console.log(`  GET /api/lido - Get Lido TVL metrics`)
-})
+async function startServer() {
+  console.log('='.repeat(50))
+  console.log('Blockchain Dashboard Backend')
+  console.log('='.repeat(50))
+  
+  // Try to connect to Redis
+  console.log('Connecting to Redis...')
+  await connectRedis()
+  
+  if (!isRedisConnected()) {
+    console.warn('⚠️  Redis not connected. Running without cache.')
+    console.warn('   Set REDIS_URL environment variable to enable caching.')
+  }
+  
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`)
+    console.log(`   Health check: http://localhost:${PORT}/api/health`)
+    console.log()
+    console.log('📡 API routes:')
+    console.log('   GET  /api/health    - Health check (includes cache status)')
+    console.log('   GET  /api/history   - Get chain history data')
+    console.log('   POST /api/history   - Add history data')
+    console.log('   GET  /api/config    - Get user config')
+    console.log('   POST /api/config    - Save user config')
+    console.log('   POST /api/alerts    - Trigger alert')
+    console.log('   GET  /api/meme      - Get Solana meme coins')
+    console.log('   GET  /api/lido      - Get Lido TVL metrics (cached)')
+    console.log('   POST /api/lido/refresh - Force refresh Lido cache')
+    console.log('='.repeat(50))
+  })
+}
+
+startServer()
 
 module.exports = app
