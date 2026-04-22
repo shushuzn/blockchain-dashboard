@@ -62,6 +62,7 @@ import AlertModal from './components/AlertModal.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import LidoView from './components/LidoView.vue'
 import AaveView from './components/AaveView.vue'
+import AlertHistory from './components/AlertHistory.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import ToastContainer from './components/Toast.vue'
 import { useToast } from './composables/useToast'
@@ -80,6 +81,7 @@ const tabs = [
   { id: 'charts', name: 'Charts' },
   { id: 'meme', name: 'Meme' },
   { id: 'dashboard', name: 'Dashboard' },
+  { id: 'alerts', name: 'Alerts' },
   { id: 'lido', name: 'Lido' },
   { id: 'aave', name: 'Aave' }
 ]
@@ -89,6 +91,7 @@ const components = {
   charts: ChartsView,
   meme: MemeView,
   dashboard: CustomDashboard,
+  alerts: AlertHistory,
   lido: LidoView,
   aave: AaveView
 }
