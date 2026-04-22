@@ -2,63 +2,141 @@
 
 ## ✅ 已完成的任务
 
-### 完成：Task 1 - Redis缓存层实现
-- ✅ Task 1.1-1.5: Redis依赖、配置、服务、集成、失效机制
+### Task 1 - Redis缓存层实现
+- ✅ Task 1.1: 安装redis依赖
+- ✅ Task 1.2: 创建config/redis.js配置
+- ✅ Task 1.3: 实现services/cache.js缓存服务
+- ✅ Task 1.4: 集成到API路由
+- ✅ Task 1.5: 实现缓存失效机制
 
-### 完成：Task 3 - README文档更新
-- ✅ Task 3.1-3.6: README完全重写
+### Task 2 - DeFi监控扩展
+- ✅ Task 2.1: 创建LidoView.vue组件
+- ✅ Task 2.2: 创建AaveView.vue组件
+- ✅ Task 2.3: 实现Lido服务(backend/src/services/lido.js)
+- ✅ Task 2.4: 实现Aave服务(backend/src/services/aave.js)
+- ✅ Task 2.5: 创建API路由(/api/lido, /api/aave)
+- ✅ Task 2.6: 在App.vue中注册DeFi路由
 
-### 完成：Task 4 - DeFi监控扩展
-- ✅ Task 4.2-4.3: Aave服务(Aave.js)和API路由
+### Task 3 - README文档更新
+- ✅ Task 3.1: 重写项目介绍
+- ✅ Task 3.2: 更新架构图
+- ✅ Task 3.3: 添加快速开始指南
+- ✅ Task 3.4: 添加部署说明
+- ✅ Task 3.5: 添加API文档
 
-## 🎯 剩余任务（按优先级排序）
+### Task 4 - 环境变量配置
+- ✅ Task 4.1: 配置系统级环境变量
+- ✅ Task 4.2: 配置项目级.env文件
+- ✅ Task 4.3: 更新.gitignore
+- ✅ Task 4.4: 创建.env.example模板
 
-### P0 最难 - 优先完成
+---
 
-| 优先级 | 任务 | 角度 | 难度 | 原因 |
+## 🎯 待完成任务（按优先级排序）
+
+### P0 最高优先级 - 质量保证 & 稳定性
+
+#### Task 10: 组件单元测试 (质量保证)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 10.1: 安装Vitest依赖 | ⬜ | 质量 |
+| Task 10.2: 配置vitest.config.js | ⬜ | 质量 |
+| Task 10.3: 编写ChainMonitor组件测试 | ⬜ | 质量 |
+| Task 10.4: 编写LidoView组件测试 | ⬜ | 质量 |
+| Task 10.5: 编写AaveView组件测试 | ⬜ | 质量 |
+| Task 10.6: 编写Store单元测试 | ⬜ | 质量 |
+| Task 10.7: 配置CI测试流程 | ⬜ | 质量 |
+
+#### Task 11: API错误处理和重试 (稳定性)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 11.1: 创建API请求拦截器(axios retry) | ⬜ | 稳定性 |
+| Task 11.2: 实现指数退避重试机制 | ⬜ | 稳定性 |
+| Task 11.3: 创建ErrorBoundary.vue组件 | ⬜ | 稳定性 |
+| Task 11.4: 创建Toast错误提示组件 | ⬜ | 稳定性 |
+| Task 11.5: 后端统一错误响应格式 | ⬜ | 稳定性 |
+| Task 11.6: 添加错误日志记录 | ⬜ | 稳定性 |
+
+### P1 中等优先级 - 代码质量 & 用户体验
+
+#### Task 12: TypeScript渐进迁移 (代码质量)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 12.1: 配置tsconfig.json | ⬜ | 代码质量 |
+| Task 12.2: 创建types目录和基础类型 | ⬜ | 代码质量 |
+| Task 12.3: 迁移stores到TypeScript | ⬜ | 代码质量 |
+| Task 12.4: 迁移API模块到TypeScript | ⬜ | 代码质量 |
+| Task 12.5: 迁移Vue组件(JSDoc混合) | ⬜ | 代码质量 |
+| Task 12.6: 后端类型定义 | ⬜ | 代码质量 |
+
+#### Task 13: PWA离线支持 (用户体验)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 13.1: 安装vite-plugin-pwa | ⬜ | 用户体验 |
+| Task 13.2: 创建manifest.json | ⬜ | 用户体验 |
+| Task 13.3: 配置Service Worker | ⬜ | 用户体验 |
+| Task 13.4: 实现离线fallback页面 | ⬜ | 用户体验 |
+| Task 13.5: 测试离线功能 | ⬜ | 用户体验 |
+
+### P2 较低优先级 - 运维 & 安全
+
+#### Task 14: 优雅停机和健康检查 (运维)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 14.1: 实现SIGTERM信号处理 | ⬜ | 运维 |
+| Task 14.2: 活跃请求完成后再退出 | ⬜ | 运维 |
+| Task 14.3: 增强/api/health端点 | ⬜ | 运维 |
+| Task 14.4: 配置Docker healthcheck | ⬜ | 运维 |
+
+#### Task 15: 安全加固 (安全)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 15.1: 安装express-validator | ⬜ | 安全 |
+| Task 15.2: 添加输入验证 | ⬜ | 安全 |
+| Task 15.3: 完善helmet安全头 | ⬜ | 安全 |
+| Task 15.4: CORS严格配置 | ⬜ | 安全 |
+
+### Task 16: 代码规范 (技术债务)
+
+| 任务 | 状态 | 角度 |
+|------|------|------|
+| Task 16.1: 配置ESLint + Prettier | ⬜ | 代码规范 |
+| Task 16.2: 清理冗余console.log | ⬜ | 代码规范 |
+| Task 16.3: 统一组件样式规范 | ⬜ | 代码规范 |
+| Task 16.4: 添加关键函数JSDoc | ⬜ | 代码规范 |
+
+---
+
+## 任务汇总表
+
+| 优先级 | 任务 | 角度 | 难度 | 状态 |
 |--------|------|------|------|------|
-| P0 | Vue3前端组件完善 | 功能 | ⭐⭐⭐⭐ | Lido/Aave显示组件、测试 |
-| P0 | API错误处理 | 稳定性 | ⭐⭐⭐ | 重试机制、ErrorBoundary |
-| P1 | Vue组件测试覆盖 | 质量 | ⭐⭐⭐ | 单元测试、E2E |
-| P1 | TypeScript迁移 | 代码质量 | ⭐⭐⭐⭐ | 渐进式迁移 |
-| P2 | PWA离线支持 | 体验 | ⭐⭐⭐ | 提升可用性 |
-| P2 | ESLint/Prettier | 代码规范 | ⭐⭐ | 代码风格统一 |
+| P0 | 组件单元测试 | 质量保证 | ⭐⭐⭐ | ⬜ |
+| P0 | API错误处理 | 稳定性 | ⭐⭐⭐ | ⬜ |
+| P1 | TypeScript迁移 | 代码质量 | ⭐⭐⭐⭐ | ⬜ |
+| P1 | PWA离线支持 | 用户体验 | ⭐⭐⭐ | ⬜ |
+| P2 | 优雅停机 | 运维 | ⭐⭐ | ⬜ |
+| P2 | 安全加固 | 安全 | ⭐⭐ | ⬜ |
+| P2 | 代码规范 | 技术债务 | ⭐⭐ | ⬜ |
 
-### Task 2: Vue3组件功能完善（最难的P0）
+---
 
-- [ ] Task 2.1: 创建LidoView.vue显示Lido TVL指标
-- [ ] Task 2.2: 创建AaveView.vue显示Aave TVL指标
-- [ ] Task 2.3: 创建DeFiDashboard.vue汇总视图
-- [ ] Task 2.4: 在App.vue中注册DeFi路由
-- [ ] Task 2.5: 编写组件单元测试 (Vitest)
-- [ ] Task 2.6: 编写E2E测试覆盖关键流程
+## 难度说明
 
-### Task 5: API错误处理（稳定性P0）
+- ⭐⭐ 简单：1-2小时可完成
+- ⭐⭐⭐ 中等：半天可完成
+- ⭐⭐⭐⭐ 较难：需要1-2天
 
-- [ ] Task 5.1: 前端API请求拦截器（axios retry）
-- [ ] Task 5.2: 实现指数退避重试机制
-- [ ] Task 5.3: 创建ErrorBoundary.vue组件
-- [ ] Task 5.4: 添加Toast错误提示组件
-- [ ] Task 5.5: 后端统一错误响应格式
+## 建议执行顺序
 
-### Task 6: TypeScript迁移（代码质量P1）
-
-- [ ] Task 6.1: 配置tsconfig.json
-- [ ] Task 6.2: 创建类型定义文件 (types/)
-- [ ] Task 6.3: 迁移stores到TypeScript
-- [ ] Task 6.4: 迁移API模块到TypeScript
-- [ ] Task 6.5: 迁移Vue组件（渐进式）
-
-### Task 7: PWA支持（体验P2）
-
-- [ ] Task 7.1: 安装vite-plugin-pwa
-- [ ] Task 7.2: 创建manifest.json
-- [ ] Task 7.3: 配置Service Worker
-- [ ] Task 7.4: 测试离线功能
-
-### Task 8: 代码规范（代码质量P2）
-
-- [ ] Task 8.1: 配置ESLint + Prettier
-- [ ] Task 8.2: 清理冗余console.log
-- [ ] Task 8.3: 统一组件样式
-- [ ] Task 8.4: 添加关键函数JSDoc
+1. **Task 11** (API错误处理) - 最容易出线上问题，优先完成
+2. **Task 10** (单元测试) - 保证后续代码质量
+3. **Task 13** (PWA) - 用户体验提升明显
+4. **Task 12** (TypeScript) - 长期收益大
+5. **Task 14/15/16** - 运维完善
