@@ -9,6 +9,8 @@ const CHAINS = [
   { id: 'solana',    name: 'Solana',      color: '#00ffa3', rpc: 'https://api.mainnet-beta.solana.com', explorer: 'https://solscan.io', decimals: 0, hasBlob: false, hasMEV: false, isSolana: true },
   { id: 'bsc',       name: 'BSC',         color: '#F3BA2F', rpc: 'https://bsc-dataseed.binance.org', explorer: 'https://bscscan.com',            decimals: 18, hasBlob: false, hasMEV: false },
   { id: 'polygon',   name: 'Polygon',     color: '#8247E5', rpc: 'https://polygon-rpc.com',        explorer: 'https://polygonscan.com',         decimals: 18, hasBlob: false, hasMEV: false },
+  { id: 'zksync',    name: 'zkSync Era',  color: '#8b5cf6', rpc: 'https://main.era.zksync.dev',   explorer: 'https://explorer.zksync.io',       decimals: 18, hasBlob: false, hasMEV: false },
+  { id: 'starknet',  name: 'Starknet',    color: '#f97316', rpc: 'https://starknet-mainnet.public.blastapi.io', explorer: 'https://starkscan.co', decimals: 18, hasBlob: false, hasMEV: false, isStarknet: true },
 ]
 
 const OFFLINE_MODE_KEY = 'mcm_offline_mode'

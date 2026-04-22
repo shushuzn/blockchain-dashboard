@@ -58,6 +58,8 @@ const alertRoutes = require('./src/routes/alerts')
 const memeRoutes = require('./src/routes/meme')
 const lidoRoutes = require('./src/routes/lido')
 const aaveRoutes = require('./src/routes/aave')
+const webhookRoutes = require('./src/routes/webhook')
+const exportRoutes = require('./src/routes/export')
 
 app.use('/api/history', historyRoutes)
 app.use('/api/config', configRoutes)
@@ -65,6 +67,8 @@ app.use('/api/alerts', alertRoutes)
 app.use('/api/meme', memeRoutes)
 app.use('/api/lido', lidoRoutes)
 app.use('/api/aave', aaveRoutes)
+app.use('/api/webhook', webhookRoutes)
+app.use('/api/export', exportRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ 

@@ -9,6 +9,34 @@
 
         <div class="modal-body">
           <div class="modal-section">
+            <div class="modal-section-title">Appearance</div>
+            
+            <div class="theme-selector">
+              <button 
+                class="theme-btn" 
+                :class="{ active: currentTheme === 'dark' }"
+                @click="setTheme('dark')"
+              >
+                🌙 Dark
+              </button>
+              <button 
+                class="theme-btn" 
+                :class="{ active: currentTheme === 'light' }"
+                @click="setTheme('light')"
+              >
+                ☀️ Light
+              </button>
+              <button 
+                class="theme-btn" 
+                :class="{ active: currentTheme === 'auto' }"
+                @click="setTheme('auto')"
+              >
+                🔄 Auto
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-section">
             <div class="modal-section-title">Data Refresh</div>
             
             <div class="form-row">
@@ -126,11 +154,22 @@ const configStore = useConfigStore()
 
 const refreshInterval = ref(15)
 const sampleInterval = ref(15)
+const currentTheme = ref('dark')
+
+const setTheme = (theme) => {
+  currentTheme.value = theme
+  localStorage.setItem('app_theme', theme)
+  const effectiveTheme = theme === 'auto' 
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme
+  document.documentElement.setAttribute('data-theme', effectiveTheme)
+}
 
 watch(() => props.show, (newVal) => {
   if (newVal) {
     loadSettings()
     calculateStorage()
+    currentTheme.value = localStorage.getItem('app_theme') || 'dark'
   }
 })
 
@@ -527,5 +566,34 @@ onMounted(() => {
 
 .btn-danger:hover {
   background: #991b1b;
+}
+
+.theme-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.theme-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #1f2937;
+  background: #0d1117;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: all 0.15s;
+}
+
+.theme-btn:hover {
+  border-color: #374151;
+  color: #e2e8f0;
+}
+
+.theme-btn.active {
+  background: #3730a3;
+  border-color: #6366f1;
+  color: #e0e7ff;
 }
 </style>

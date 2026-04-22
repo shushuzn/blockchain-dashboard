@@ -1,0 +1,95 @@
+export default {
+  app: {
+    title: '区块链仪表板',
+    refresh: '刷新',
+    settings: '设置',
+    alerts: '警报',
+    monitor: '监控',
+    charts: '图表',
+    dashboard: '仪表盘',
+    lido: 'Lido',
+    aave: 'Aave'
+  },
+  chains: {
+    ethereum: '以太坊',
+    base: 'Base',
+    arbitrum: 'Arbitrum',
+    optimism: 'Optimism',
+    solana: 'Solana',
+    bsc: 'BSC',
+    polygon: 'Polygon',
+    zksync: 'zkSync Era',
+    starknet: 'Starknet'
+  },
+  metrics: {
+    ethPrice: 'ETH 价格',
+    btcPrice: 'BTC 价格',
+    change24h: '24小时涨跌',
+    lastUpdated: '更新时间',
+    latestBlock: '最新区块',
+    priorityFee: '优先费',
+    baseFee: '基础费',
+    blobFee: 'Blob 费用',
+    gasUtil: 'Gas 利用率',
+    ethSupply: 'ETH 供应量',
+    ethMarketCap: 'ETH 市值',
+    mevReward: 'MEV 奖励'
+  },
+  settings: {
+    title: '设置',
+    appearance: '外观',
+    dark: '深色',
+    light: '浅色',
+    auto: '自动',
+    dataRefresh: '数据刷新',
+    refreshInterval: '自动刷新间隔（秒）',
+    sampleInterval: '历史采样间隔（分钟）',
+    storage: '存储',
+    historyData: '历史数据',
+    alertLog: '警报日志',
+    storageUsed: '已用存储',
+    clearAllData: '清除所有数据',
+    dataManagement: '数据管理',
+    exportData: '导出数据',
+    importData: '导入数据',
+    about: '关于',
+    version: '版本',
+    cancel: '取消',
+    save: '保存'
+  },
+  alerts: {
+    title: '警报',
+    enabled: '警报已启用',
+    disabled: '警报已禁用',
+    test: '测试警报',
+    threshold: '阈值',
+    cooldown: '冷却时间（分钟）',
+    saveSuccess: '设置已保存',
+    saveFailed: '保存设置失败'
+  },
+  lido: {
+    title: 'Lido 质押',
+    totalETH: '总质押 ETH',
+    bufferedETH: '缓冲 ETH',
+    activeValidators: '活跃验证者',
+    stETHPrice: 'stETH 价格',
+    stETHRatio: 'stETH/ETH',
+    marketCap: '市值',
+    history7d: '7天历史',
+    loading: '正在加载 Lido 数据...',
+    error: '加载 Lido 数据失败'
+  },
+  aave: {
+    title: 'Aave 借贷',
+    totalSupply: '总存款',
+    totalBorrowed: '总借款',
+    utilization: '利用率',
+    loading: '正在加载 Aave 数据...',
+    error: '加载 Aave 数据失败'
+  },
+  errors: {
+    networkError: '网络错误，请检查网络连接。',
+    serverError: '服务器错误，请稍后重试。',
+    unknownError: '发生未知错误。'
+  }
+}
