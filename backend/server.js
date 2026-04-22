@@ -69,6 +69,8 @@ const webhookRoutes = require('./src/routes/webhook')
 const exportRoutes = require('./src/routes/export')
 const pushRoutes = require('./src/routes/push')
 const authRoutes = require('./src/routes/auth')
+const rolesRoutes = require('./src/routes/roles')
+const analyticsRoutes = require('./src/routes/analytics')
 
 app.use('/api/history', historyRoutes)
 app.use('/api/config', configRoutes)
@@ -80,6 +82,8 @@ app.use('/api/webhook', webhookRoutes)
 app.use('/api/export', exportRoutes)
 app.use('/api/push', pushRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/roles', rolesRoutes)
+app.use('/api/analytics', analyticsRoutes)
 
 async function initGraphQL() {
   try {
