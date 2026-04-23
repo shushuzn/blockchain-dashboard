@@ -1,39 +1,34 @@
-# Build stage
-FROM node:18-alpine as build
+FROM node:18-alpine AS base
 
+FROM base AS builder
 WORKDIR /app
 
-# Install dependencies for frontend
-COPY src/webapp/package*.json ./src/webapp/
-RUN cd src/webapp && npm install
+COPY package*.json ./
+RUN npm ci
 
-# Build frontend
-COPY src/webapp/ ./src/webapp/
-RUN cd src/webapp && npm run build
+COPY . .
 
-# Install dependencies for backend
-COPY backend/package*.json ./backend/
-RUN cd backend && npm install
-
-# Production stage
-FROM node:18-alpine
-
+FROM base AS production
 WORKDIR /app
 
-# Copy built frontend
-COPY --from=build /app/dist ./dist
+ENV NODE_ENV=production
 
-# Copy backend files
-COPY backend/ ./backend/
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Copy built backend dependencies
-COPY --from=build /app/backend/node_modules ./backend/node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/server.js ./
+COPY --from=builder /app/.env.example ./
 
-# Create .env file
-COPY backend/.env.example ./backend/.env
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Expose ports
+USER nodejs
+
 EXPOSE 8000
 
-# Start backend server
-CMD ["node", "backend/server.js"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+
+CMD ["node", "server.js"]
