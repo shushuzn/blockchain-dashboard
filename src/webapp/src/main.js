@@ -13,14 +13,25 @@ app.use(createPinia())
 app.use(i18n)
 app.use(router)
 
-app.mount('#app')
-
-if (typeof window !== 'undefined') {
-  const saved = localStorage.getItem('app_theme')
-  if (saved === 'light' || saved === 'dark') {
-    document.documentElement.setAttribute('data-theme', saved)
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
-  }
+if (import.meta.env.VITE_SENTRY_DSN) {
+  import('@sentry/vue').then(({ init, BrowserTracing }) => {
+    init({
+      dsn: import.meta.env.VITE_SENTRY_DSN,
+      integrations: [
+        new BrowserTracing({
+          routingInstrumentation: router.router,
+        }),
+      ],
+      tracesSampleRate: 0.1,
+      environment: import.meta.env.MODE,
+    })
+  }).catch(console.error)
 }
+
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Global error:', err)
+  console.error('Component:', instance)
+  console.error('Info:', info)
+}
+
+app.mount('#app')
