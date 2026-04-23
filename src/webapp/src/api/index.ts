@@ -100,7 +100,7 @@ apiClient.interceptors.response.use(
       timestamp: new Date().toISOString()
     }
     
-    logger.error('[API Error]', errorResponse)
+    logger.error('[API Error]', { ...errorResponse })
     
     return Promise.reject(errorResponse)
   }

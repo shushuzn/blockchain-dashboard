@@ -81,7 +81,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useChainStore } from '../stores/chain'
-import * as LightweightCharts from 'lightweight-charts'
 
 const chainStore = useChainStore()
 
@@ -90,6 +89,7 @@ const chartRange = ref(1)
 const activeMetrics = ref({ gas: true, baseFee: true, blobFee: false, util: true })
 const chartContainer = ref(null)
 let chartInstance = null
+let LightweightCharts = null
 
 const chains = computed(() => chainStore.chains)
 const currentChain = computed(() => {
@@ -147,8 +147,13 @@ const toggleMetric = (metric) => {
   renderChart()
 }
 
-const renderChart = () => {
+const renderChart = async () => {
   if (!chartContainer.value) return
+
+  // 动态导入 LightweightCharts
+  if (!LightweightCharts) {
+    LightweightCharts = await import('lightweight-charts')
+  }
 
   if (chartInstance) {
     chartInstance.remove()
@@ -215,8 +220,8 @@ const renderChart = () => {
   chartInstance.timeScale().fitContent()
 }
 
-onMounted(() => {
-  renderChart()
+onMounted(async () => {
+  await renderChart()
   window.addEventListener('resize', renderChart)
 })
 
@@ -227,9 +232,17 @@ onUnmounted(() => {
   window.removeEventListener('resize', renderChart)
 })
 
-watch(activeChart, renderChart)
-watch(chartRange, renderChart)
-watch(activeMetrics, renderChart, { deep: true })
+watch(activeChart, async () => {
+  await renderChart()
+})
+
+watch(chartRange, async () => {
+  await renderChart()
+})
+
+watch(activeMetrics, async () => {
+  await renderChart()
+}, { deep: true })
 </script>
 
 <style scoped>

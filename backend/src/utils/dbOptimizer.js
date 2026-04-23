@@ -2,6 +2,11 @@ const sequelize = require('../config/database')
 const { logger } = require('./logger')
 
 async function addIndexes() {
+  if (!sequelize || !sequelize.query) {
+    logger.warn('Database not initialized, skipping index creation')
+    return
+  }
+  
   try {
     await sequelize.query(`
       CREATE INDEX IF NOT EXISTS idx_config_userId ON config(userId);
@@ -13,28 +18,43 @@ async function addIndexes() {
 }
 
 async function addQueryMonitoring() {
-  const originalQuery = sequelize.query.bind(sequelize)
+  if (!sequelize || !sequelize.query) {
+    logger.warn('Database not initialized, skipping query monitoring')
+    return
+  }
   
-  sequelize.query = async function(sql, options) {
-    const start = Date.now()
+  try {
+    const originalQuery = sequelize.query.bind(sequelize)
     
-    try {
-      const result = await originalQuery(sql, options)
-      const duration = Date.now() - start
+    sequelize.query = async function(sql, options) {
+      const start = Date.now()
       
-      if (duration > 100) {
-        logger.warn('Slow query detected', { duration, sql: sql.substring(0, 200) })
+      try {
+        const result = await originalQuery(sql, options)
+        const duration = Date.now() - start
+        
+        if (duration > 100) {
+          logger.warn('Slow query detected', { duration, sql: sql.substring(0, 200) })
+        }
+        
+        return result
+      } catch (error) {
+        logger.error('Query error', { error: error.message, sql: sql.substring(0, 200) })
+        throw error
       }
-      
-      return result
-    } catch (error) {
-      logger.error('Query error', { error: error.message, sql: sql.substring(0, 200) })
-      throw error
     }
+    logger.info('Query monitoring enabled')
+  } catch (error) {
+    logger.error('Error adding query monitoring', { error: error.message })
   }
 }
 
 async function optimizeDatabase() {
+  if (!sequelize || !sequelize.query) {
+    logger.warn('Database not initialized, skipping optimization')
+    return
+  }
+  
   try {
     await sequelize.query('PRAGMA journal_mode = WAL;')
     await sequelize.query('PRAGMA synchronous = NORMAL;')
@@ -47,6 +67,11 @@ async function optimizeDatabase() {
 }
 
 async function analyzeTables() {
+  if (!sequelize || !sequelize.query) {
+    logger.warn('Database not initialized, skipping table analysis')
+    return []
+  }
+  
   try {
     const [tables] = await sequelize.query(`
       SELECT name, 

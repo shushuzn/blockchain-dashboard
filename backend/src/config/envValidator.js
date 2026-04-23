@@ -1,5 +1,4 @@
-const { getLogger } = require('../utils/logger')
-const logger = getLogger()
+const { logger } = require('../utils/logger')
 
 const REQUIRED_ENV_VARS = [
   { name: 'JWT_SECRET', minLength: 32, sensitive: true },
