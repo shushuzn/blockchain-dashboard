@@ -16,8 +16,11 @@ services:
       - PORT=8000
       - DATABASE_URL=sqlite:///database.db
       - ONCHAINOS_PATH=/usr/local/bin/onchainos
-      - JWT_SECRET=blockchain-dashboard-secret-key
-      - ENCRYPTION_KEY=blockchain-dashboard-encryption-key
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-change-this-in-production}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     restart: unless-stopped
   
   # Frontend development server

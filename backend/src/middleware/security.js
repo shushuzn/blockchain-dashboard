@@ -3,6 +3,30 @@ const helmet = require('helmet')
 
 const WHITELIST = process.env.IP_WHITELIST?.split(',') || []
 
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000'
+const COINGECKO_API = 'https://api.coingecko.com'
+const EXPO_API = 'https://exp.host'
+
+const CSP_CONFIG = {
+  'default-src': ["'self'"],
+  'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+  'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+  'img-src': ["'self'", 'data:', 'https:', 'blob:'],
+  'font-src': ["'self'", 'https://fonts.gstatic.com'],
+  'connect-src': ["'self'", API_BASE_URL, COINGECKO_API, EXPO_API],
+  'frame-src': ["'none'"],
+  'object-src': ["'none'"],
+  'media-src': ["'self'"],
+  'worker-src': ["'self'", 'blob:'],
+  'manifest-src': ["'self'"],
+}
+
+function buildCSP() {
+  return Object.entries(CSP_CONFIG)
+    .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+    .join('; ')
+}
+
 function createRateLimiter(options = {}) {
   const defaultOptions = {
     windowMs: 15 * 60 * 1000,
@@ -44,13 +68,31 @@ function ipWhitelist(req, res, next) {
   }
 }
 
+function enhancedSecurityHeaders(req, res, next) {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'X-Download-Options': 'noopen',
+    'X-Permitted-Cross-Domain-Policies': 'none',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+    'Content-Security-Policy': buildCSP(),
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+    'Pragma': 'no-cache',
+  })
+  next()
+}
+
 function securityHeaders(req, res, next) {
   res.set({
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
+    'X-Download-Options': 'noopen',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'Content-Security-Policy': "default-src 'self'",
+    'Content-Security-Policy': buildCSP(),
   })
   next()
 }
@@ -88,7 +130,7 @@ function generateRequestId() {
 
 function corsOptions(req, res, next) {
   const origin = req.headers.origin
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173']
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000']
 
   if (allowedOrigins.includes(origin) || !origin) {
     res.set({
@@ -96,6 +138,7 @@ function corsOptions(req, res, next) {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
       'Access-Control-Max-Age': '86400',
+      'Access-Control-Allow-Credentials': 'true',
     })
   }
 
@@ -107,7 +150,9 @@ module.exports = {
   authLimiter,
   sensitiveLimiter,
   ipWhitelist,
+  enhancedSecurityHeaders,
   securityHeaders,
   requestLogger,
   corsOptions,
+  buildCSP,
 }

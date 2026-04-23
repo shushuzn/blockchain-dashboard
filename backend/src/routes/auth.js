@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const bcrypt = require('bcryptjs')
 const User = require('../models/User')
-const { generateToken, generateRefreshToken, verifyToken, authMiddleware } = require('../middleware/auth')
+const { generateToken, generateRefreshToken, verifyToken, addToBlacklist, authMiddleware } = require('../middleware/auth')
 
 const SALT_ROUNDS = 10
 
@@ -211,6 +211,12 @@ router.post('/refresh', async (req, res) => {
  */
 router.post('/logout', authMiddleware, async (req, res) => {
   try {
+    const authHeader = req.headers.authorization
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1]
+      addToBlacklist(token, 'logout')
+    }
+
     const user = await User.findByPk(req.user.id)
     if (user) {
       await user.update({ refreshToken: null })

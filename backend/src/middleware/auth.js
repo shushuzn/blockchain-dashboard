@@ -4,6 +4,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-this-in-production'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d'
 
+const blacklist = new Map()
+const BLACKLIST_CLEANUP_INTERVAL = 60 * 60 * 1000
+
 function generateToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 }
@@ -13,6 +16,10 @@ function generateRefreshToken(payload) {
 }
 
 function verifyToken(token) {
+  if (isBlacklisted(token)) {
+    return { invalid: true, reason: 'blacklisted' }
+  }
+
   try {
     return jwt.verify(token, JWT_SECRET)
   } catch (err) {
@@ -22,6 +29,47 @@ function verifyToken(token) {
     return { invalid: true }
   }
 }
+
+function addToBlacklist(token, reason = 'logout') {
+  try {
+    const decoded = jwt.decode(token)
+    if (!decoded) return false
+
+    const ttl = decoded.exp - Math.floor(Date.now() / 1000)
+    if (ttl > 0) {
+      blacklist.set(token, { reason, exp: decoded.exp, revokedAt: Date.now() })
+      return true
+    }
+    return false
+  } catch (err) {
+    console.error('Failed to blacklist token:', err)
+    return false
+  }
+}
+
+function isBlacklisted(token) {
+  return blacklist.has(token)
+}
+
+function cleanupBlacklist() {
+  const now = Math.floor(Date.now() / 1000)
+  let cleaned = 0
+
+  for (const [token, data] of blacklist.entries()) {
+    if (data.exp < now) {
+      blacklist.delete(token)
+      cleaned++
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`Blacklist cleanup: removed ${cleaned} expired entries`)
+  }
+
+  return cleaned
+}
+
+setInterval(cleanupBlacklist, BLACKLIST_CLEANUP_INTERVAL)
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization
@@ -38,7 +86,8 @@ function authMiddleware(req, res, next) {
   }
 
   if (decoded.invalid) {
-    return res.status(403).json({ error: 'Invalid token' })
+    const reason = decoded.reason === 'blacklisted' ? 'Token has been revoked' : 'Invalid token'
+    return res.status(403).json({ error: reason })
   }
 
   req.user = decoded
@@ -64,6 +113,9 @@ module.exports = {
   generateToken,
   generateRefreshToken,
   verifyToken,
+  addToBlacklist,
+  isBlacklisted,
+  cleanupBlacklist,
   authMiddleware,
   optionalAuthMiddleware,
   JWT_SECRET,
