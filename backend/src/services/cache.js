@@ -1,4 +1,5 @@
 const { getRedisClient, isRedisConnected } = require('../config/redis')
+const { logger } = require('../utils/logger')
 
 const CACHE_TTL = {
   PRICE: 60,
@@ -19,12 +20,35 @@ const CACHE_KEYS = {
 const MEMORY_CACHE_TTL = 60000
 const memoryCache = new Map()
 
+const cacheStats = {
+  hits: 0,
+  misses: 0,
+  sets: 0,
+  errors: 0
+}
+
+function getCacheStats() {
+  return { ...cacheStats }
+}
+
+function resetCacheStats() {
+  cacheStats.hits = 0
+  cacheStats.misses = 0
+  cacheStats.sets = 0
+  cacheStats.errors = 0
+}
+
 function cleanupMemoryCache() {
   const now = Date.now()
+  let cleaned = 0
   for (const [key, { data, expires }] of memoryCache.entries()) {
     if (now > expires) {
       memoryCache.delete(key)
+      cleaned++
     }
+  }
+  if (cleaned > 0) {
+    logger.debug(`Memory cache cleaned ${cleaned} expired entries`)
   }
 }
 
@@ -38,24 +62,28 @@ async function getCache(key) {
       try {
         const value = await client.get(key)
         if (value) {
-          console.log(`[CACHE HIT] ${key} (Redis)`)
+          cacheStats.hits++
+          logger.debug(`Cache hit: ${key} (Redis)`)
           return JSON.parse(value)
         }
       } catch (redisError) {
-        console.warn(`[CACHE] Redis error, falling back to memory: ${redisError.message}`)
+        logger.warn(`Redis error, falling back to memory: ${redisError.message}`)
       }
     }
     
     const memCached = memoryCache.get(key)
     if (memCached && Date.now() < memCached.expires) {
-      console.log(`[CACHE HIT] ${key} (Memory)`)
+      cacheStats.hits++
+      logger.debug(`Cache hit: ${key} (Memory)`)
       return memCached.data
     }
     
-    console.log(`[CACHE MISS] ${key}`)
+    cacheStats.misses++
+    logger.debug(`Cache miss: ${key}`)
     return null
   } catch (error) {
-    console.error(`[CACHE ERROR] Get ${key}:`, error.message)
+    cacheStats.errors++
+    logger.error(`Cache error on get ${key}:`, { error: error.message })
     return null
   }
 }
@@ -67,9 +95,9 @@ async function setCache(key, value, ttlSeconds) {
     if (client) {
       try {
         await client.setEx(key, ttlSeconds, JSON.stringify(value))
-        console.log(`[CACHE SET] ${key} (TTL: ${ttlSeconds}s) [Redis]`)
+        logger.debug(`Cache set: ${key} (TTL: ${ttlSeconds}s) [Redis]`)
       } catch (redisError) {
-        console.warn(`[CACHE] Redis set error: ${redisError.message}`)
+        logger.warn(`Redis set error: ${redisError.message}`)
       }
     }
     
@@ -77,10 +105,12 @@ async function setCache(key, value, ttlSeconds) {
       data: value,
       expires: Date.now() + Math.min(ttlSeconds * 1000, MEMORY_CACHE_TTL)
     })
-    console.log(`[CACHE SET] ${key} (TTL: ${ttlSeconds}s) [Memory]`)
+    cacheStats.sets++
+    logger.debug(`Cache set: ${key} (TTL: ${ttlSeconds}s) [Memory]`)
     return true
   } catch (error) {
-    console.error(`[CACHE ERROR] Set ${key}:`, error.message)
+    cacheStats.errors++
+    logger.error(`Cache error on set ${key}:`, { error: error.message })
     return false
   }
 }
@@ -94,10 +124,11 @@ async function deleteCache(key) {
       await client.del(key)
     }
     
-    console.log(`[CACHE DELETE] ${key}`)
+    logger.debug(`Cache deleted: ${key}`)
     return true
   } catch (error) {
-    console.error(`[CACHE ERROR] Delete ${key}:`, error.message)
+    cacheStats.errors++
+    logger.error(`Cache error on delete ${key}:`, { error: error.message })
     return false
   }
 }
@@ -163,12 +194,28 @@ async function invalidateAllChainCache() {
     const keys = await client.keys(`${CACHE_KEYS.CHAIN}*`)
     if (keys.length > 0) {
       await client.del(keys)
-      console.log(`[CACHE INVALIDATE] ${keys.length} chain cache keys`)
+      logger.info(`Invalidated ${keys.length} chain cache keys`)
     }
     return true
   } catch (error) {
-    console.error('[CACHE ERROR] Invalidate chain cache:', error.message)
+    logger.error('Failed to invalidate chain cache:', { error: error.message })
     return false
+  }
+}
+
+async function getCacheSize() {
+  return {
+    memory: memoryCache.size,
+    redis: await (async () => {
+      try {
+        const client = await getRedisClient()
+        if (!client) return -1
+        const keys = await client.keys('*')
+        return keys.length
+      } catch {
+        return -1
+      }
+    })()
   }
 }
 
@@ -190,5 +237,8 @@ module.exports = {
   getMemeCache,
   setMemeCache,
   invalidateAllChainCache,
+  getCacheStats,
+  resetCacheStats,
+  getCacheSize,
   isRedisConnected
 }

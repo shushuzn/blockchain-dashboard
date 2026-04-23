@@ -96,7 +96,7 @@ const trendText = computed(() => {
   const first = data[0]?.baseFee || 0
   const last = data[data.length - 1]?.baseFee || 0
   if (last > first * 1.1) return '📈 Rising (+' + Math.round((last / first - 1) * 100) + '%)'
-  if (last < first * 0.9) return '📉 Falling (' + Math.round((1 - last / first) * 100 + '%)'
+  if (last < first * 0.9) return '📉 Falling (' + Math.round((1 - last / first) * 100) + '%)'
   return '➡️ Stable'
 })
 

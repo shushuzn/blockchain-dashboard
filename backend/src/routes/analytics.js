@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { generateReport } = require('../utils/analytics')
 const { requirePermission, PERMISSIONS } = require('../middleware/permissions')
+const { logger } = require('../utils/logger')
 
 router.get('/report/:chainId', requirePermission(PERMISSIONS.READ_CHAIN_DATA), (req, res) => {
   try {
@@ -11,7 +12,7 @@ router.get('/report/:chainId', requirePermission(PERMISSIONS.READ_CHAIN_DATA), (
     const report = generateReport(chainId, period)
     res.json(report)
   } catch (error) {
-    console.error('Report generation error:', error)
+    logger.error('Report generation error', { error: error.message })
     res.status(500).json({ error: 'Failed to generate report' })
   }
 })
@@ -40,7 +41,7 @@ router.get('/compare', requirePermission(PERMISSIONS.READ_CHAIN_DATA), (req, res
 
     res.json(comparison)
   } catch (error) {
-    console.error('Comparison error:', error)
+    logger.error('Comparison error', { error: error.message })
     res.status(500).json({ error: 'Failed to generate comparison' })
   }
 })

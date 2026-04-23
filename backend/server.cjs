@@ -7,25 +7,19 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
-const http = require('http')
-const compression = require('compression')
 const { connectRedis, isRedisConnected } = require('./src/config/redis')
 const { notFoundHandler, globalErrorHandler, logError } = require('./src/utils/errors')
 const { middleware: metricsMiddleware, getMetrics } = require('./src/utils/metrics')
 const { i18nMiddleware } = require('./src/utils/i18n')
 const { createGraphQLServer, expressMiddleware: graphqlExpressMiddleware } = require('./src/graphql/server')
 const { apiLimiter, authLimiter, enhancedSecurityHeaders } = require('./src/middleware/security')
-const { optimizeDatabase, addQueryMonitoring, addIndexes, analyzeTables } = require('./src/utils/dbOptimizer')
-const { initWebSocket, broadcast, close: closeWebSocket } = require('./src/utils/websocket')
-const { logger, requestLogger } = require('./src/utils/logger')
+const { logger } = require('./src/utils/logger')
 
 const app = express()
 const PORT = process.env.PORT || 8000
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
   : ['http://localhost:3000', 'http://localhost:5173']
-
-const startTime = Date.now()
 
 const helmetOptions = {
   contentSecurityPolicy: {
@@ -63,23 +57,8 @@ const corsOptions = {
 app.use(helmet(helmetOptions))
 app.use(cors(corsOptions))
 app.use(enhancedSecurityHeaders)
-app.use(compression({
-  filter: (req, res) => {
-    if (req.headers['x-no-compression']) {
-      return false
-    }
-    const contentType = res.getHeader('Content-Type')
-    if (contentType && contentType.includes('text/event-stream')) {
-      return false
-    }
-    return compression.filter(req, res)
-  },
-  level: 6,
-  threshold: 1024
-}))
 app.use(express.json({ limit: '10kb' }))
 app.use(metricsMiddleware)
-app.use(requestLogger)
 app.use(i18nMiddleware)
 
 morgan.token('request-id', (req) => req.get('x-request-id') || '-')
@@ -99,7 +78,6 @@ const pushRoutes = require('./src/routes/push')
 const authRoutes = require('./src/routes/auth')
 const rolesRoutes = require('./src/routes/roles')
 const analyticsRoutes = require('./src/routes/analytics')
-const prometheusRoutes = require('./src/routes/prometheus')
 
 app.use('/api/history', apiLimiter, historyRoutes)
 app.use('/api/config', apiLimiter, configRoutes)
@@ -113,7 +91,6 @@ app.use('/api/push', apiLimiter, pushRoutes)
 app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/roles', apiLimiter, rolesRoutes)
 app.use('/api/analytics', apiLimiter, analyticsRoutes)
-app.use('/metrics', prometheusRoutes)
 
 async function initGraphQL() {
   try {
@@ -127,113 +104,40 @@ async function initGraphQL() {
 }
 initGraphQL()
 
-function getSystemHealth() {
-  const memUsage = process.memoryUsage()
-  const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000)
-  
-  return {
-    status: 'ok',
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
     timestamp: new Date().toISOString(),
-    uptime: uptimeSeconds,
-    memory: {
-      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-      rss: Math.round(memUsage.rss / 1024 / 1024)
-    },
     cache: isRedisConnected() ? 'connected' : 'disconnected',
     version: process.env.npm_package_version || '1.0.0'
-  }
-}
-
-app.get('/api/health', (req, res) => {
-  const health = getSystemHealth()
-  res.json(health)
-})
-
-app.get('/api/health/detailed', async (req, res) => {
-  try {
-    const { getCacheStats, getCacheSize } = require('./src/services/cache')
-    const metrics = getMetrics()
-    const cacheStats = getCacheStats()
-    const cacheSize = await getCacheSize()
-    
-    const health = {
-      ...getSystemHealth(),
-      database: 'connected',
-      cache: {
-        status: isRedisConnected() ? 'connected' : 'disconnected',
-        stats: cacheStats,
-        size: cacheSize
-      },
-      metrics: {
-        requests: metrics.totalRequests,
-        errors: metrics.totalErrors,
-        avgResponseTime: metrics.avgResponseTime
-      }
-    }
-    
-    res.json(health)
-  } catch (error) {
-    logger.error('Detailed health check failed', { error: error.message })
-    res.status(503).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: 'Health check failed'
-    })
-  }
+  })
 })
 
 app.get('/api/metrics', (req, res) => {
   res.json(getMetrics())
 })
 
+/**
+ * @swagger
+ * /api/docs:
+ *   get:
+ *     summary: API documentation
+ *     description: Swagger UI for API documentation
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Swagger UI page
+ */
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 app.use(notFoundHandler)
 app.use(globalErrorHandler)
-
-async function initDatabaseOptimization() {
-  try {
-    await optimizeDatabase()
-    await addIndexes()
-    addQueryMonitoring()
-    await analyzeTables()
-    logger.info('Database optimization completed')
-  } catch (error) {
-    logger.warn('Database optimization skipped', { error: error.message })
-  }
-}
-
-function initWebSocketServer(server) {
-  try {
-    initWebSocket(server)
-    logger.info('WebSocket server initialized at /ws')
-  } catch (error) {
-    logger.warn('WebSocket initialization failed', { error: error.message })
-  }
-}
-
-function setupPriceBroadcast() {
-  setInterval(async () => {
-    try {
-      const { getCachedPrice } = require('./src/services/cache')
-      const price = await getCachedPrice('ethereum')
-      if (price) {
-        broadcast('price:ethereum', { price, timestamp: Date.now() })
-      }
-    } catch (error) {
-    }
-  }, 30000)
-}
 
 async function startServer() {
   logger.info('Starting Blockchain Dashboard Backend', {
     env: process.env.NODE_ENV || 'development',
     allowedOrigins: ALLOWED_ORIGINS
   })
-
-  logger.info('Initializing database optimization...')
-  await initDatabaseOptimization()
 
   logger.info('Connecting to Redis...')
   await connectRedis()
@@ -242,16 +146,11 @@ async function startServer() {
     logger.warn('Redis not connected. Running without cache.')
   }
 
-  const server = http.createServer(app)
-  initWebSocketServer(server)
-  setupPriceBroadcast()
-
-  server.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info('Server started', {
       port: PORT,
       endpoints: {
         health: `http://localhost:${PORT}/api/health`,
-        detailedHealth: `http://localhost:${PORT}/api/health/detailed`,
         websocket: `ws://localhost:${PORT}/ws`,
         graphql: `http://localhost:${PORT}/graphql`
       }
@@ -259,8 +158,7 @@ async function startServer() {
   })
 
   const gracefulShutdown = (signal) => {
-    logger.info(`Received ${signal}, starting graceful shutdown`)
-    closeWebSocket()
+    logger.info(`Received ${signal}, starting graceful shutdown...`)
     server.close(() => {
       logger.info('HTTP server closed')
       process.exit(0)
@@ -271,17 +169,17 @@ async function startServer() {
       process.exit(1)
     }, 10000)
   }
-
+  
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
   process.on('SIGINT', () => gracefulShutdown('SIGINT'))
-
+  
   process.on('uncaughtException', (err) => {
     logError(err)
     process.exit(1)
   })
-
+  
   process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Unhandled Rejection', { reason: String(reason) })
+    logger.error('Unhandled Rejection', { promise: String(promise), reason: String(reason) })
   })
 }
 

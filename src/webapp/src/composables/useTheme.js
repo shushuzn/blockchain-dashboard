@@ -1,5 +1,7 @@
 import { ref, watch, onMounted } from 'vue'
+import { getLogger } from '../utils/logger'
 
+const logger = getLogger('theme')
 const THEME_KEY = 'app_theme'
 const VALID_THEMES = ['dark', 'light', 'auto']
 
@@ -21,7 +23,7 @@ function getEffectiveTheme() {
 
 function setTheme(newTheme) {
   if (!VALID_THEMES.includes(newTheme)) {
-    console.warn(`Invalid theme: ${newTheme}. Valid themes: ${VALID_THEMES.join(', ')}`)
+    logger.warn(`Invalid theme: ${newTheme}. Valid themes: ${VALID_THEMES.join(', ')}`)
     return
   }
   

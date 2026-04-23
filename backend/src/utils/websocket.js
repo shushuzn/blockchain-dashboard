@@ -1,4 +1,5 @@
 const WebSocket = require('ws')
+const { logger } = require('./logger')
 
 let wss = null
 const clients = new Map()
@@ -14,24 +15,24 @@ function initWebSocket(server) {
       connectedAt: Date.now(),
     })
 
-    console.log(`WebSocket client connected: ${clientId}`)
+    logger.info('WebSocket client connected', { clientId })
 
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message)
         handleMessage(clientId, data)
       } catch (error) {
-        console.error('WebSocket message error:', error)
+        logger.error('WebSocket message error', { clientId, error: error.message })
       }
     })
 
     ws.on('close', () => {
       clients.delete(clientId)
-      console.log(`WebSocket client disconnected: ${clientId}`)
+      logger.info('WebSocket client disconnected', { clientId })
     })
 
     ws.on('error', (error) => {
-      console.error(`WebSocket error for ${clientId}:`, error)
+      logger.error('WebSocket error', { clientId, error: error.message })
       clients.delete(clientId)
     })
 
@@ -42,7 +43,7 @@ function initWebSocket(server) {
     })
   })
 
-  console.log('WebSocket server initialized')
+  logger.info('WebSocket server initialized')
   return wss
 }
 

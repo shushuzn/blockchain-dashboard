@@ -1,4 +1,22 @@
-const chainStore = require('../stores/chain')
+// Mock chain data for analytics
+function generateMockData(chainId, period) {
+  const data = []
+  const now = Date.now()
+  const periodMs = period === '24h' ? 24 * 60 * 60 * 1000 : period === '7d' ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000
+  const points = period === '24h' ? 24 : period === '7d' ? 7 * 24 : 1
+  
+  for (let i = 0; i < points; i++) {
+    const timestamp = Math.floor((now - (points - i) * (periodMs / points)) / 1000)
+    data.push({
+      t: timestamp,
+      gas: 30 + Math.random() * 70, // 30-100 gwei
+      baseFee: 10000000000 + Math.random() * 40000000000, // 10-50 gwei
+      blobFee: 500000000 + Math.random() * 500000000, // 0.5-1 gwei
+      util: 40 + Math.random() * 40 // 40-80%
+    })
+  }
+  return data
+}
 
 function calculateTrend(data, key = 'gas') {
   if (!data || data.length < 2) return { trend: 'stable', change: 0 }
@@ -90,28 +108,25 @@ function calculateVariance(values) {
 }
 
 function generateReport(chainId, period = '24h') {
-  const history = chainStore.chainHistory[chainId] || []
+  const history = generateMockData(chainId, period)
   const now = Date.now()
-  const periodMs = period === '24h' ? 24 * 60 * 60 * 1000 : period === '7d' ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000
-
-  const filtered = history.filter(p => now - p.t * 1000 < periodMs)
-
-  if (filtered.length === 0) {
+  
+  if (history.length === 0) {
     return { error: 'No data available for the specified period' }
   }
 
-  const gasValues = filtered.map(p => p.gas || 0)
-  const baseFeeValues = filtered.map(p => p.baseFee || 0)
+  const gasValues = history.map(p => p.gas || 0)
+  const baseFeeValues = history.map(p => p.baseFee || 0)
 
   return {
     chainId,
     period,
     generatedAt: new Date().toISOString(),
     summary: {
-      dataPoints: filtered.length,
+      dataPoints: history.length,
       timeRange: {
-        start: new Date(filtered[0].t * 1000).toISOString(),
-        end: new Date(filtered[filtered.length - 1].t * 1000).toISOString(),
+        start: new Date(history[0].t * 1000).toISOString(),
+        end: new Date(history[history.length - 1].t * 1000).toISOString(),
       },
     },
     gas: {
@@ -119,17 +134,17 @@ function generateReport(chainId, period = '24h') {
       max: Math.max(...gasValues),
       avg: gasValues.reduce((a, b) => a + b, 0) / gasValues.length,
       current: gasValues[gasValues.length - 1],
-      trend: calculateTrend(filtered, 'gas'),
-      movingAvg: calculateMovingAverage(filtered, 'gas', 10),
-      anomalies: detectAnomalies(filtered, 'gas'),
-      prediction: predictNextValue(filtered, 'gas'),
+      trend: calculateTrend(history, 'gas'),
+      movingAvg: calculateMovingAverage(history, 'gas', 5),
+      anomalies: detectAnomalies(history, 'gas'),
+      prediction: predictNextValue(history, 'gas'),
     },
     baseFee: {
       min: Math.min(...baseFeeValues),
       max: Math.max(...baseFeeValues),
       avg: baseFeeValues.reduce((a, b) => a + b, 0) / baseFeeValues.length,
       current: baseFeeValues[baseFeeValues.length - 1],
-      trend: calculateTrend(filtered, 'baseFee'),
+      trend: calculateTrend(history, 'baseFee'),
     },
   }
 }

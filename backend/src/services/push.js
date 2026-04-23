@@ -1,4 +1,5 @@
 const axios = require('axios')
+const { logger } = require('../utils/logger')
 
 const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send'
 
@@ -51,7 +52,7 @@ async function sendPushNotification(tokens, title, body, data = {}) {
     receipts.forEach((receipt, index) => {
       if (receipt.status === 'error') {
         failedTokens.push(tokens[index])
-        console.error(`Push notification failed for token ${tokens[index]}: ${receipt.message}`)
+        logger.error('Push notification failed', { token: tokens[index], message: receipt.message })
       }
     })
 
@@ -62,7 +63,7 @@ async function sendPushNotification(tokens, title, body, data = {}) {
       receipts,
     }
   } catch (error) {
-    console.error('Push notification service error:', error.message)
+    logger.error('Push notification service error', { error: error.message })
     addToOfflineQueue({ title, body, data }, tokens)
     return { success: false, error: error.message }
   }
@@ -85,7 +86,7 @@ async function processOfflineQueue() {
       item.attempts++
       processed++
     } catch (err) {
-      console.error('Failed to process offline queue item:', err.message)
+      logger.error('Failed to process offline queue item', { error: err.message })
     }
   }
 

@@ -1,4 +1,7 @@
 import axios from 'axios'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('api')
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
@@ -103,7 +106,12 @@ apiClient.interceptors.response.use(
       originalRequest.__retryCount++
       
       const delay = calculateDelay(originalRequest.__retryCount - 1)
-      console.warn(`[API] Retry ${originalRequest.__retryCount}/${MAX_RETRIES} after ${delay}ms: ${originalRequest.url}`)
+      logger.warn('[API] Retry', {
+        attempt: originalRequest.__retryCount,
+        maxRetries: MAX_RETRIES,
+        delay: delay,
+        url: originalRequest.url
+      })
       
       await sleep(delay)
       return apiClient(originalRequest)
@@ -118,7 +126,7 @@ apiClient.interceptors.response.use(
       details: error.response?.data
     })
     
-    console.error('[API Error]', apiError)
+    logger.error('[API Error]', apiError)
     
     return Promise.reject(apiError)
   }

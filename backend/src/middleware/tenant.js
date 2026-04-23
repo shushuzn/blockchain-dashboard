@@ -1,5 +1,6 @@
 const { Tenant, checkPlanLimits } = require('../models/Tenant')
 const { verifyToken } = require('../middleware/auth')
+const { logger } = require('../utils/logger')
 
 const tenantCache = new Map()
 const CACHE_TTL = 60000
@@ -36,7 +37,7 @@ async function tenantMiddleware(req, res, next) {
         return next()
       }
     } catch (err) {
-      console.error('API key validation error:', err)
+      logger.error('API key validation error', { error: err.message })
     }
   }
 
@@ -52,7 +53,7 @@ async function tenantMiddleware(req, res, next) {
       }
       return res.status(404).json({ error: 'Tenant not found' })
     } catch (err) {
-      console.error('Tenant validation error:', err)
+      logger.error('Tenant validation error', { error: err.message })
       return res.status(500).json({ error: 'Tenant validation failed' })
     }
   }
@@ -72,7 +73,7 @@ async function tenantMiddleware(req, res, next) {
         }
       }
     } catch (err) {
-      console.error('User tenant lookup error:', err)
+      logger.error('User tenant lookup error', { error: err.message })
     }
   }
 

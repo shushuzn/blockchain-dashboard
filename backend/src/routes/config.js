@@ -2,139 +2,199 @@ const express = require('express')
 const router = express.Router()
 const Config = require('../models/Config')
 const { encrypt, decrypt } = require('../utils/encryption')
+const { logger } = require('../utils/logger')
 
-// Get config (sensitive data sanitized)
 router.get('/', async (req, res) => {
   try {
     const { userId = 'default' } = req.query
     
-    let config = await Config.findOne({ where: { userId } })
-    
-    if (!config) {
-      config = await Config.create({ userId })
-    }
+    if (Config) {
+      let config = await Config.findOne({ where: { userId } })
+      
+      if (!config) {
+        config = await Config.create({ userId })
+      }
 
-    res.json({
-      ...config.toJSON(),
-      thresholds: JSON.parse(config.thresholds),
-      alertLog: JSON.parse(config.alertLog),
-      alertState: JSON.parse(config.alertState),
-      hasTelegramToken: !!config.telegramToken,
-      hasTelegramChatId: !!config.telegramChatId,
-      hasSmtpConfig: !!config.smtpUser,
-      telegramToken: undefined,
-      telegramChatId: undefined,
-      smtpUser: undefined,
-      smtpPass: undefined,
-      smtpTo: undefined
-    })
+      res.json({
+        ...config.toJSON(),
+        thresholds: JSON.parse(config.thresholds),
+        alertLog: JSON.parse(config.alertLog),
+        alertState: JSON.parse(config.alertState),
+        hasTelegramToken: !!config.telegramToken,
+        hasTelegramChatId: !!config.telegramChatId,
+        hasSmtpConfig: !!config.smtpUser,
+        telegramToken: undefined,
+        telegramChatId: undefined,
+        smtpUser: undefined,
+        smtpPass: undefined,
+        smtpTo: undefined
+      })
+    } else {
+      res.json({
+        id: 1,
+        userId: userId,
+        alertEnabled: false,
+        cooldownMin: 5,
+        thresholds: {
+          ethereum: { gas: 50, baseFee: 50, blobFee: 0.1 },
+          base: { gas: 30, baseFee: 30, blobFee: 0.1 },
+          arbitrum: { gas: 5, baseFee: 5, blobFee: 0 },
+          optimism: { gas: 5, baseFee: 5, blobFee: 0 }
+        },
+        alertLog: [],
+        alertState: {},
+        hasTelegramToken: false,
+        hasTelegramChatId: false,
+        hasSmtpConfig: false,
+        smtpHost: 'smtp.gmail.com',
+        smtpPort: '587'
+      })
+    }
   } catch (error) {
-    console.error('Error fetching config:', error)
+    logger.error('Error fetching config', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// Get sensitive config (requires authentication in real app)
 router.get('/sensitive', async (req, res) => {
   try {
     const { userId = 'default' } = req.query
     
-    let config = await Config.findOne({ where: { userId } })
+    if (!Config) {
+      return res.status(503).json({ error: 'Database not available' })
+    }
+
+    const config = await Config.findOne({ where: { userId } })
     
     if (!config) {
-      config = await Config.create({ userId })
+      return res.status(404).json({ error: 'Config not found' })
     }
 
     res.json({
-      thresholds: JSON.parse(config.thresholds),
-      telegramToken: config.telegramToken ? decrypt(config.telegramToken) : '',
-      telegramChatId: config.telegramChatId ? decrypt(config.telegramChatId) : '',
-      smtpUser: config.smtpUser ? decrypt(config.smtpUser) : '',
-      smtpPass: config.smtpPass ? decrypt(config.smtpPass) : '',
-      smtpTo: config.smtpTo ? decrypt(config.smtpTo) : ''
+      hasTelegramToken: !!config.telegramToken,
+      hasTelegramChatId: !!config.telegramChatId,
+      hasSmtpConfig: !!config.smtpUser
     })
   } catch (error) {
-    console.error('Error fetching sensitive config:', error)
+    logger.error('Error fetching sensitive config', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// Save config
 router.post('/', async (req, res) => {
   try {
-    const { userId = 'default', ...configData } = req.body
+    const { userId = 'default', alertEnabled, cooldownMin, thresholds, smtpHost, smtpPort, smtpUser, smtpPass, smtpTo, telegramToken, telegramChatId } = req.body
     
-    // Handle JSON fields
-    const thresholds = JSON.stringify(configData.thresholds || {})
-    const alertLog = JSON.stringify(configData.alertLog || [])
-    const alertState = JSON.stringify(configData.alertState || {})
-
-    // Encrypt sensitive fields
-    const encryptedData = {
-      ...configData,
-      telegramToken: configData.telegramToken ? encrypt(configData.telegramToken) : '',
-      telegramChatId: configData.telegramChatId ? encrypt(configData.telegramChatId) : '',
-      smtpUser: configData.smtpUser ? encrypt(configData.smtpUser) : '',
-      smtpPass: configData.smtpPass ? encrypt(configData.smtpPass) : '',
-      smtpTo: configData.smtpTo ? encrypt(configData.smtpTo) : ''
+    if (!Config) {
+      return res.status(503).json({ error: 'Database not available' })
     }
 
-    let config = await Config.findOne({ where: { userId } })
+    const configData = { userId }
     
-    if (config) {
-      // Update existing config
-      await config.update({
-        ...encryptedData,
-        thresholds,
-        alertLog,
-        alertState
-      })
-    } else {
-      // Create new config
-      config = await Config.create({
-        userId,
-        ...encryptedData,
-        thresholds,
-        alertLog,
-        alertState
-      })
-    }
+    if (alertEnabled !== undefined) configData.alertEnabled = alertEnabled
+    if (cooldownMin !== undefined) configData.cooldownMin = cooldownMin
+    if (thresholds) configData.thresholds = JSON.stringify(thresholds)
+    if (smtpHost) configData.smtpHost = smtpHost
+    if (smtpPort) configData.smtpPort = smtpPort
+    if (smtpUser) configData.smtpUser = smtpUser
+    if (smtpPass) configData.smtpPass = encrypt(smtpPass)
+    if (smtpTo) configData.smtpTo = smtpTo
+    if (telegramToken) configData.telegramToken = encrypt(telegramToken)
+    if (telegramChatId) configData.telegramChatId = telegramChatId
+
+    const [config, created] = await Config.upsert(configData)
 
     res.json({
-      ...config.toJSON(),
-      thresholds: JSON.parse(config.thresholds),
-      alertLog: JSON.parse(config.alertLog),
-      alertState: JSON.parse(config.alertState),
-      telegramToken: config.telegramToken ? decrypt(config.telegramToken) : '',
-      telegramChatId: config.telegramChatId ? decrypt(config.telegramChatId) : '',
-      smtpUser: config.smtpUser ? decrypt(config.smtpUser) : '',
-      smtpPass: config.smtpPass ? decrypt(config.smtpPass) : '',
-      smtpTo: config.smtpTo ? decrypt(config.smtpTo) : ''
+      success: true,
+      data: {
+        id: config.id,
+        userId: config.userId,
+        alertEnabled: config.alertEnabled,
+        cooldownMin: config.cooldownMin,
+        thresholds: JSON.parse(config.thresholds)
+      }
     })
   } catch (error) {
-    console.error('Error saving config:', error)
+    logger.error('Error saving config', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// Clear alert log
-router.delete('/alerts', async (req, res) => {
+router.delete('/alert-log', async (req, res) => {
   try {
     const { userId = 'default' } = req.query
     
-    let config = await Config.findOne({ where: { userId } })
-    
-    if (config) {
-      await config.update({
-        alertLog: '[]',
-        alertState: '{}'
-      })
+    if (!Config) {
+      return res.status(503).json({ error: 'Database not available' })
     }
 
-    res.json({ message: 'Alert log cleared' })
+    const config = await Config.findOne({ where: { userId } })
+    
+    if (!config) {
+      return res.status(404).json({ error: 'Config not found' })
+    }
+
+    config.alertLog = JSON.stringify([])
+    await config.save()
+
+    res.json({ success: true, message: 'Alert log cleared' })
   } catch (error) {
-    console.error('Error clearing alert log:', error)
+    logger.error('Error clearing alert log', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.post('/test-telegram', async (req, res) => {
+  try {
+    const { telegramToken, telegramChatId } = req.body
+    
+    if (!telegramToken || !telegramChatId) {
+      return res.status(400).json({ error: 'Telegram token and chat ID are required' })
+    }
+
+    const TelegramBot = require('node-telegram-bot-api')
+    const bot = new TelegramBot(telegramToken, { polling: false })
+    
+    await bot.sendMessage(telegramChatId, '🔔 Test message from Blockchain Dashboard')
+    
+    res.json({ success: true, message: 'Telegram notification sent' })
+  } catch (error) {
+    logger.error('Error sending test telegram', { error: error.message, code: error.code })
+    res.status(500).json({ error: 'Failed to send telegram notification' })
+  }
+})
+
+router.post('/test-email', async (req, res) => {
+  try {
+    const { smtpHost, smtpPort, smtpUser, smtpPass, smtpTo } = req.body
+    
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPass || !smtpTo) {
+      return res.status(400).json({ error: 'All SMTP fields are required' })
+    }
+
+    const nodemailer = require('nodemailer')
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(smtpPort, 10),
+      secure: smtpPort === '465',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    })
+
+    await transporter.sendMail({
+      from: `"Blockchain Dashboard" <${smtpUser}>`,
+      to: smtpTo,
+      subject: '🔔 Test Alert from Blockchain Dashboard',
+      text: 'This is a test email from Blockchain Dashboard.'
+    })
+
+    res.json({ success: true, message: 'Test email sent' })
+  } catch (error) {
+    logger.error('Error sending test email', { error: error.message })
+    res.status(500).json({ error: 'Failed to send test email' })
   }
 })
 

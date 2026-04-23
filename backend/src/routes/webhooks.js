@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { v4: uuidv4 } = require('uuid')
+const { logger } = require('../utils/logger')
 
 const webhooks = new Map()
 const MAX_RETRIES = 3
@@ -61,7 +62,7 @@ async function sendWebhook(webhook, event, data) {
       })
 
       if (response.ok) {
-        console.log(`Webhook ${webhook.id} delivered successfully`)
+        logger.info('Webhook delivered', { webhookId: webhook.id, event })
         logDelivery(webhook.id, event, payload.id, 'success')
         return
       }
@@ -69,7 +70,7 @@ async function sendWebhook(webhook, event, data) {
       throw new Error(`HTTP ${response.status}`)
     } catch (err) {
       const delay = backoff === 'exponential' ? Math.pow(2, attempt - 1) * 1000 : attempt * 1000
-      console.error(`Webhook delivery failed (attempt ${attempt}/${maxRetries}):`, err.message)
+      logger.error('Webhook delivery failed', { webhookId: webhook.id, attempt, maxRetries, error: err.message })
 
       if (attempt < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, delay))
@@ -130,7 +131,7 @@ router.post('/', async (req, res) => {
       message: 'Webhook registered successfully',
     })
   } catch (error) {
-    console.error('Webhook registration error:', error)
+    logger.error('Webhook registration failed', { error: error.message })
     res.status(500).json({ error: 'Failed to register webhook' })
   }
 })

@@ -1,3 +1,6 @@
+import { getLogger } from './logger'
+
+const logger = getLogger('cache')
 const CACHE_PREFIX = 'mcm_cache_'
 const DEFAULT_TTL = 5 * 60 * 1000
 
@@ -30,7 +33,7 @@ export function setCache(key, data, ttl = DEFAULT_TTL) {
     localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item))
     return true
   } catch (error) {
-    console.error('Cache write error:', error)
+    logger.error('Cache write error:', { error })
     return false
   }
 }

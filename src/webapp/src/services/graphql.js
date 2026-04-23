@@ -1,3 +1,6 @@
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('graphql')
 const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_URL || '/graphql'
 
 export async function graphqlQuery(query, variables = {}) {
@@ -11,13 +14,13 @@ export async function graphqlQuery(query, variables = {}) {
     const result = await response.json()
 
     if (result.errors) {
-      console.error('GraphQL errors:', result.errors)
+      logger.error('GraphQL errors:', { errors: result.errors })
       throw new Error(result.errors[0].message)
     }
 
     return result.data
   } catch (error) {
-    console.error('GraphQL request failed:', error)
+    logger.error('GraphQL request failed:', { error })
     throw error
   }
 }

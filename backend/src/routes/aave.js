@@ -2,13 +2,14 @@ const express = require('express')
 const router = express.Router()
 const { getAaveMetrics } = require('../services/aave')
 const { getAaveCache, setAaveCache } = require('../services/cache')
+const { logger } = require('../utils/logger')
 
 router.get('/', async (req, res) => {
   try {
     let metrics = await getAaveCache()
     
     if (!metrics) {
-      console.log('[AAVE] Fetching fresh data...')
+      logger.info('Fetching fresh Aave data')
       metrics = await getAaveMetrics()
       
       if (!metrics) {
@@ -20,14 +21,14 @@ router.get('/', async (req, res) => {
     
     res.json(metrics)
   } catch (error) {
-    console.error('Error fetching Aave metrics:', error)
+    logger.error('Error fetching Aave metrics', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
 router.post('/refresh', async (req, res) => {
   try {
-    console.log('[AAVE] Force refresh requested')
+    logger.info('Force refresh Aave metrics')
     const metrics = await getAaveMetrics()
     
     if (!metrics) {
@@ -37,7 +38,7 @@ router.post('/refresh', async (req, res) => {
     await setAaveCache(metrics)
     res.json({ message: 'Cache refreshed', metrics })
   } catch (error) {
-    console.error('Error refreshing Aave metrics:', error)
+    logger.error('Error refreshing Aave metrics', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })

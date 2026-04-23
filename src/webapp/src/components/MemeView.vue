@@ -56,6 +56,7 @@
             class="meme-card-img" 
             :src="meme.memeCoin.imageUri" 
             @error="handleImageError"
+            loading="lazy"
           >
         </div>
         <div class="meme-card-price">

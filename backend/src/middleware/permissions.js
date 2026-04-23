@@ -1,4 +1,5 @@
 const { Role, PERMISSIONS } = require('../models/Role')
+const { logger } = require('../utils/logger')
 
 function hasPermission(userPermissions, requiredPermission) {
   return userPermissions.includes(requiredPermission)
@@ -31,7 +32,7 @@ function requirePermission(permission) {
 
       next()
     } catch (error) {
-      console.error('Permission check error:', error)
+      logger.error('Permission check error', { error: error.message })
       res.status(500).json({ error: 'Permission check failed' })
     }
   }
@@ -56,7 +57,7 @@ function requireAnyPermission(permissions) {
 
       next()
     } catch (error) {
-      console.error('Permission check error:', error)
+      logger.error('Permission check error', { error: error.message })
       res.status(500).json({ error: 'Permission check failed' })
     }
   }
@@ -81,7 +82,7 @@ function requireAllPermissions(permissions) {
 
       next()
     } catch (error) {
-      console.error('Permission check error:', error)
+      logger.error('Permission check error', { error: error.message })
       res.status(500).json({ error: 'Permission check failed' })
     }
   }

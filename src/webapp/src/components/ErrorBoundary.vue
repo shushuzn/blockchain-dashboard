@@ -14,12 +14,15 @@
 
 <script setup>
 import { ref, onErrorCaptured } from 'vue'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('ErrorBoundary')
 
 const hasError = ref(false)
 const errorMessage = ref('')
 
 onErrorCaptured((err, instance, info) => {
-  console.error('[ErrorBoundary]', {
+  logger.error('[ErrorBoundary]', {
     error: err.message || String(err),
     stack: err.stack,
     info

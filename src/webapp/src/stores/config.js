@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { configApi } from '../api'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('configStore')
 
 export const useConfigStore = defineStore('config', {
   state: () => ({
@@ -32,7 +35,7 @@ export const useConfigStore = defineStore('config', {
         this.applyConfig(apiConfig)
         this.configFromApi = true
       } catch (error) {
-        console.warn('Failed to load config from API, using localStorage:', error.message)
+        logger.warn('Failed to load config from API, using localStorage:', { error: error.message })
         this.loadConfigFromLocal()
         this.configFromApi = false
       }
@@ -46,7 +49,7 @@ export const useConfigStore = defineStore('config', {
           this.applyConfig(parsed)
         }
       } catch(e) {
-        console.warn('Failed to load config from localStorage:', e.message)
+        logger.warn('Failed to load config from localStorage:', { error: e.message })
       }
 
       try {
@@ -96,7 +99,7 @@ export const useConfigStore = defineStore('config', {
           await configApi.saveConfig(configData)
           this.saveConfigToLocal(configData)
         } catch (error) {
-          console.warn('Failed to save config to API, saving locally:', error.message)
+          logger.warn('Failed to save config to API, saving locally:', { error: error.message })
           this.saveConfigToLocal(configData)
         }
       } else {
@@ -108,7 +111,7 @@ export const useConfigStore = defineStore('config', {
       try {
         localStorage.setItem('mcm_config_v3', JSON.stringify(configData))
       } catch(e) {
-        console.error('Failed to save config locally:', e)
+        logger.error('Failed to save config locally:', { error: e })
       }
     },
 
@@ -117,14 +120,14 @@ export const useConfigStore = defineStore('config', {
         try {
           await configApi.saveConfig({ alertState: this.alertState })
         } catch (error) {
-          console.warn('Failed to save alert state to API:', error.message)
+          logger.warn('Failed to save alert state to API:', { error: error.message })
         }
       }
 
       try {
         localStorage.setItem('mcm_alert_state_v2', JSON.stringify(this.alertState))
       } catch(e) {
-        console.error('Failed to save alert state locally:', e)
+        logger.error('Failed to save alert state locally:', { error: e })
       }
     },
 
@@ -154,7 +157,7 @@ export const useConfigStore = defineStore('config', {
         try {
           await configApi.clearAlertLog()
         } catch (error) {
-          console.warn('Failed to clear alert log on API:', error.message)
+          logger.warn('Failed to clear alert log on API:', { error: error.message })
         }
       }
 

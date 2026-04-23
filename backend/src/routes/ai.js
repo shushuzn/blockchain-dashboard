@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { detectAnomaly, predictNextValue, recommendThresholds, getAnomalyStats } = require('../services/anomalyDetector')
+const { logger } = require('../utils/logger')
 
 router.get('/stats/:chainId', (req, res) => {
   try {
@@ -8,7 +9,7 @@ router.get('/stats/:chainId', (req, res) => {
     const stats = getAnomalyStats(chainId)
     res.json(stats)
   } catch (error) {
-    console.error('Stats error:', error)
+    logger.error('Stats error', { error: error.message })
     res.status(500).json({ error: 'Failed to get stats' })
   }
 })
@@ -19,7 +20,7 @@ router.get('/recommendations/:chainId', (req, res) => {
     const recommendations = recommendThresholds(chainId)
     res.json({ chainId, recommendations })
   } catch (error) {
-    console.error('Recommendations error:', error)
+    logger.error('Recommendations error', { error: error.message })
     res.status(500).json({ error: 'Failed to get recommendations' })
   }
 })
@@ -37,7 +38,7 @@ router.get('/predict/:chainId', (req, res) => {
 
     res.json({ chainId, metric, ...prediction })
   } catch (error) {
-    console.error('Prediction error:', error)
+    logger.error('Prediction error', { error: error.message })
     res.status(500).json({ error: 'Failed to generate prediction' })
   }
 })
@@ -72,7 +73,7 @@ router.get('/analyze/:chainId', (req, res) => {
       recommendations: recommendations[metric],
     })
   } catch (error) {
-    console.error('Analysis error:', error)
+    logger.error('Analysis error', { error: error.message })
     res.status(500).json({ error: 'Failed to analyze' })
   }
 })

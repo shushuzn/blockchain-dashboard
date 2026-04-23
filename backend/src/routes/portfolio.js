@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { Wallet, getPortfolioSummary, syncWalletPositions } = require('../models/Portfolio')
 const { getWalletPositions } = require('../services/portfolio')
+const { logger } = require('../utils/logger')
 
 router.post('/wallets', async (req, res) => {
   try {
@@ -26,7 +27,7 @@ router.post('/wallets', async (req, res) => {
       message: 'Wallet added successfully',
     })
   } catch (error) {
-    console.error('Add wallet error:', error)
+    logger.error('Add wallet failed', { error: error.message })
     res.status(500).json({ error: 'Failed to add wallet' })
   }
 })
@@ -47,7 +48,7 @@ router.get('/wallets', async (req, res) => {
       count: wallets.length,
     })
   } catch (error) {
-    console.error('Get wallets error:', error)
+    logger.error('Get wallets failed', { error: error.message })
     res.status(500).json({ error: 'Failed to get wallets' })
   }
 })
@@ -63,7 +64,7 @@ router.delete('/wallets/:address', async (req, res) => {
 
     res.json({ success: true, message: 'Wallet removed' })
   } catch (error) {
-    console.error('Delete wallet error:', error)
+    logger.error('Delete wallet failed', { error: error.message })
     res.status(500).json({ error: 'Failed to delete wallet' })
   }
 })
@@ -74,7 +75,7 @@ router.get('/summary', async (req, res) => {
     const summary = await getPortfolioSummary(tenantId)
     res.json(summary)
   } catch (error) {
-    console.error('Portfolio summary error:', error)
+    logger.error('Portfolio summary failed', { error: error.message })
     res.status(500).json({ error: 'Failed to get portfolio summary' })
   }
 })
@@ -88,7 +89,7 @@ router.post('/sync/:address', async (req, res) => {
 
     res.json({ success: true, message: 'Wallet synced' })
   } catch (error) {
-    console.error('Sync wallet error:', error)
+    logger.error('Sync wallet failed', { error: error.message })
     res.status(500).json({ error: 'Failed to sync wallet' })
   }
 })
@@ -139,7 +140,7 @@ router.get('/health', async (req, res) => {
       recommendations: getRecommendations(summary),
     })
   } catch (error) {
-    console.error('Health check error:', error)
+    logger.error('Health check failed', { error: error.message })
     res.status(500).json({ error: 'Failed to calculate health' })
   }
 })
@@ -201,9 +202,9 @@ async function syncWalletData(walletId, address, chain) {
   try {
     const positions = await getWalletPositions(address, chain)
     await syncWalletPositions(wallet.id, positions.map(p => ({ ...p, walletId: wallet.id })))
-    console.log(`Synced ${positions.length} positions for ${address}`)
+    logger.info('Wallet positions synced', { address, count: positions.length })
   } catch (err) {
-    console.error('Sync positions error:', err)
+    logger.error('Sync positions failed', { error: err.message })
   }
 }
 

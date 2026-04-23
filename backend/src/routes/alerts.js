@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const axios = require('axios')
 const nodemailer = require('nodemailer')
+const { logger } = require('../utils/logger')
 
 const alertDeduplication = new Map()
 const DEDUP_WINDOW = 60000
@@ -80,7 +81,7 @@ router.post('/', async (req, res) => {
         )
         results.telegram = true
       } catch (telegramError) {
-        console.error('Telegram alert failed:', telegramError.message)
+        logger.error('Telegram alert failed', { error: telegramError.message })
       }
     }
 
@@ -109,7 +110,7 @@ router.post('/', async (req, res) => {
         
         results.email = true
       } catch (emailError) {
-        console.error('Email alert failed:', emailError.message)
+        logger.error('Email alert failed', { error: emailError.message })
       }
     }
 
@@ -119,12 +120,11 @@ router.post('/', async (req, res) => {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Error triggering alert:', error)
+    logger.error('Error triggering alert', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// Test alert
 router.post('/test', async (req, res) => {
   try {
     const { type, config } = req.body
@@ -167,7 +167,7 @@ router.post('/test', async (req, res) => {
       res.status(400).json({ error: 'Invalid alert type or missing credentials' })
     }
   } catch (error) {
-    console.error('Error sending test alert:', error)
+    logger.error('Error sending test alert', { error: error.message })
     res.status(500).json({ error: 'Internal server error' })
   }
 })

@@ -1,28 +1,8 @@
 const { DataTypes } = require('sequelize')
-const sequelize = require('../../config/database')
+const { sequelize, isDatabaseConnected } = require('../config/database')
+const { logger } = require('../utils/logger')
 
-const Role = sequelize.define('Role', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  description: {
-    type: DataTypes.STRING,
-  },
-  permissions: {
-    type: DataTypes.JSON,
-    defaultValue: [],
-  },
-}, {
-  tableName: 'roles',
-  timestamps: true,
-})
+let Role = null
 
 const PERMISSIONS = {
   READ_CHAIN_DATA: 'read:chain_data',
@@ -65,23 +45,48 @@ const ROLES = {
   },
 }
 
-async function initRoles() {
-  try {
-    await Role.sync()
+if (isDatabaseConnected() && sequelize) {
+  Role = sequelize.define('Role', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    description: {
+      type: DataTypes.STRING,
+    },
+    permissions: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+  }, {
+    tableName: 'roles',
+    timestamps: true,
+  })
 
-    for (const roleData of Object.values(ROLES)) {
-      await Role.findOrCreate({
-        where: { name: roleData.name },
-        defaults: roleData,
-      })
+  async function initRoles() {
+    try {
+      await Role.sync()
+
+      for (const roleData of Object.values(ROLES)) {
+        await Role.findOrCreate({
+          where: { name: roleData.name },
+          defaults: roleData,
+        })
+      }
+
+      logger.info('Roles initialized')
+    } catch (error) {
+      logger.error('Error initializing roles', { error: error.message })
     }
-
-    console.log('Roles initialized')
-  } catch (error) {
-    console.error('Error initializing roles:', error)
   }
-}
 
-initRoles()
+  initRoles()
+}
 
 module.exports = { Role, PERMISSIONS, ROLES }

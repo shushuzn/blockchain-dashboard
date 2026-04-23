@@ -28,9 +28,13 @@ class EventBus {
     const handlers = this.handlers.get(event) || []
     handlers.forEach((handler) => {
       try {
-        Promise.resolve(handler(data)).catch(console.error)
+        Promise.resolve(handler(data)).catch((err) => {
+          const { logger } = require('../utils/logger')
+          logger.error('Event handler error', { event, error: err.message })
+        })
       } catch (err) {
-        console.error('Event handler error:', err)
+        const { logger } = require('../utils/logger')
+        logger.error('Event emit error', { event, error: err.message })
       }
     })
     return this

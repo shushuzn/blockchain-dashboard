@@ -1,5 +1,7 @@
 import { onCLS, onFID, onFCP, onLCP, onTTFB, onINP } from 'web-vitals'
+import { getLogger } from '../utils/logger'
 
+const logger = getLogger('webVitals')
 const vitals = []
 
 function formatMetric(value) {
@@ -17,7 +19,7 @@ function sendToAnalytics({ name, delta, id, rating }) {
 
   vitals.push(metric)
 
-  console.log(`[Web Vitals] ${name}:`, {
+  logger.info(`[Web Vitals] ${name}:`, {
     value: formatMetric(delta),
     rating,
     id,
@@ -28,7 +30,7 @@ function sendToAnalytics({ name, delta, id, rating }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(metric),
-    }).catch(console.error)
+    }).catch(error => logger.error('[Web Vitals] Failed to send to analytics:', { error }))
   }
 }
 
@@ -41,9 +43,9 @@ function initWebVitals() {
     onTTFB(sendToAnalytics)
     onINP(sendToAnalytics)
 
-    console.log('[Web Vitals] Monitoring initialized')
+    logger.info('[Web Vitals] Monitoring initialized')
   } catch (error) {
-    console.error('[Web Vitals] Failed to initialize:', error)
+    logger.error('[Web Vitals] Failed to initialize:', { error })
   }
 }
 

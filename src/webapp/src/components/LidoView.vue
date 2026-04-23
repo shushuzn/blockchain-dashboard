@@ -77,6 +77,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { lidoApi } from '../api'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('LidoView')
 
 const data = ref({})
 const loading = ref(true)
@@ -90,7 +93,7 @@ const fetchLidoData = async () => {
     data.value = result
   } catch (err) {
     error.value = 'Failed to load Lido data: ' + (err.message || 'Unknown error')
-    console.error('Lido fetch error:', err)
+    logger.error('Lido fetch error:', { error: err })
   } finally {
     loading.value = false
   }

@@ -4,6 +4,7 @@ const { Tenant, PLAN_LIMITS, getTenantStatus } = require('../models/Tenant')
 const { getTenantUsage, rateLimitByPlan } = require('../middleware/tenant')
 const { v4: uuidv4 } = require('uuid')
 const { requireTenant } = require('../middleware/tenant')
+const { logger } = require('../utils/logger')
 
 const PRICING = {
   monthly: {
@@ -48,7 +49,7 @@ router.post('/', async (req, res) => {
       message: 'Trial period activated (14 days)',
     })
   } catch (error) {
-    console.error('Tenant creation error:', error)
+    logger.error('Tenant creation failed', { error: error.message })
     res.status(500).json({ error: 'Failed to create tenant' })
   }
 })
@@ -85,7 +86,7 @@ router.get('/me', requireTenant, async (req, res) => {
       pricing,
     })
   } catch (error) {
-    console.error('Tenant status error:', error)
+    logger.error('Tenant status failed', { error: error.message })
     res.status(500).json({ error: 'Failed to get tenant status' })
   }
 })
@@ -122,7 +123,7 @@ router.post('/upgrade', requireTenant, async (req, res) => {
       message: `Upgraded to ${plan} (${billingCycle})`,
     })
   } catch (error) {
-    console.error('Upgrade error:', error)
+    logger.error('Plan upgrade failed', { error: error.message })
     res.status(500).json({ error: 'Failed to upgrade plan' })
   }
 })
@@ -151,7 +152,7 @@ router.post('/api-key', requireTenant, async (req, res) => {
       message: 'API key created. Store it securely - it will not be shown again.',
     })
   } catch (error) {
-    console.error('API key creation error:', error)
+    logger.error('API key creation failed', { error: error.message })
     res.status(500).json({ error: 'Failed to create API key' })
   }
 })
@@ -168,7 +169,7 @@ router.delete('/api-key/:name', requireTenant, async (req, res) => {
 
     res.json({ success: true, message: 'API key deleted' })
   } catch (error) {
-    console.error('API key deletion error:', error)
+    logger.error('API key deletion failed', { error: error.message })
     res.status(500).json({ error: 'Failed to delete API key' })
   }
 })
@@ -184,7 +185,7 @@ router.get('/usage', requireTenant, async (req, res) => {
       resetsIn: '30 days',
     })
   } catch (error) {
-    console.error('Usage error:', error)
+    logger.error('Usage fetch failed', { error: error.message })
     res.status(500).json({ error: 'Failed to get usage' })
   }
 })

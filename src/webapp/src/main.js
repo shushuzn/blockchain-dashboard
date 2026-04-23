@@ -3,9 +3,12 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
+import { getLogger } from './utils/logger'
 
 import './style.css'
 import './themes.css'
+
+const logger = getLogger('main')
 
 const app = createApp(App)
 
@@ -25,13 +28,12 @@ if (import.meta.env.VITE_SENTRY_DSN) {
       tracesSampleRate: 0.1,
       environment: import.meta.env.MODE,
     })
-  }).catch(console.error)
+  }).catch(error => logger.error('Failed to initialize Sentry', { error }))
 }
 
 app.config.errorHandler = (err, instance, info) => {
-  console.error('Global error:', err)
-  console.error('Component:', instance)
-  console.error('Info:', info)
+  logger.error('Global error', { error: err, component: instance, info })
 }
 
 app.mount('#app')
+logger.info('App mounted successfully')

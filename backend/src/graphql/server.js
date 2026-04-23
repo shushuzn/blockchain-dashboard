@@ -2,6 +2,7 @@ const { ApolloServer } = require('@apollo/server')
 const { ApolloServerPluginLandingPageGraphQLPlayground } = require('@apollo/server-plugin-landing-page-graphql-playground')
 const { typeDefs } = require('./schema')
 const { resolvers } = require('./resolvers')
+const { logger } = require('../utils/logger')
 
 function expressMiddleware(server) {
   return async (req, res, next) => {
@@ -55,7 +56,7 @@ async function createGraphQLServer() {
       {
         async didEncounterErrors({ errors }) {
           for (const error of errors) {
-            console.error('[GraphQL Error]', {
+            logger.error('GraphQL error', {
               message: error.message,
               path: error.path,
               locations: error.locations

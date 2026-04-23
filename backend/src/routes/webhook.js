@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { sendAlertWebhook } = require('../services/webhook')
+const { logger } = require('../utils/logger')
 
 router.post('/alert', async (req, res) => {
   try {
@@ -18,7 +19,7 @@ router.post('/alert', async (req, res) => {
     
     res.json(result)
   } catch (error) {
-    console.error('[Webhook API]', error)
+    logger.error('Webhook send failed', { error: error.message })
     res.status(500).json({ error: 'Webhook send failed' })
   }
 })
@@ -42,7 +43,7 @@ router.post('/test', async (req, res) => {
     
     res.json(result)
   } catch (error) {
-    console.error('[Webhook Test]', error)
+    logger.error('Webhook test failed', { error: error.message })
     res.status(500).json({ error: 'Webhook test failed' })
   }
 })

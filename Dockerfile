@@ -1,14 +1,4 @@
-FROM node:18-alpine AS base
-
-FROM base AS builder
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-
-FROM base AS production
+FROM node:18-alpine AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -16,10 +6,9 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --only=production
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/server.js ./
-COPY --from=builder /app/.env.example ./
+COPY src ./src
+COPY server.js ./
+COPY .env.example ./
 
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001

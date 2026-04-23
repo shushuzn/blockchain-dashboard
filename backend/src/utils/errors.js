@@ -56,7 +56,8 @@ function errorResponse(res, error) {
     response.stack = error.stack
   }
   
-  console.error(`[ERROR] ${error.code}: ${error.message} [${requestId}]`)
+  const { logger } = require('./logger')
+  logger.error('Request error', { code: error.code, message: error.message, requestId, statusCode })
   
   return res.status(statusCode).json(response)
 }
@@ -68,6 +69,7 @@ function asyncHandler(fn) {
 }
 
 function logError(error, req = null) {
+  const { logger } = require('./logger')
   const logEntry = {
     timestamp: new Date().toISOString(),
     error: {
@@ -89,7 +91,7 @@ function logError(error, req = null) {
     }
   }
   
-  console.error('[ERROR]', JSON.stringify(logEntry, null, 2))
+  logger.error('Error logged', logEntry)
   return logEntry
 }
 

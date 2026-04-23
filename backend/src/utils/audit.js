@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize')
 const sequelize = require('../config/database')
+const { logger } = require('./logger')
 
 const AuditLog = sequelize.define('AuditLog', {
   id: {
@@ -86,7 +87,7 @@ async function logAudit(data) {
     })
     return log
   } catch (error) {
-    console.error('Failed to create audit log:', error)
+    logger.error('Failed to create audit log', { error: error.message })
     return null
   }
 }

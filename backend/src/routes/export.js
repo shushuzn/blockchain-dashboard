@@ -1,7 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const { Op } = require('sequelize')
-const { History, Config } = require('../models/Config')
+const History = require('../models/History')
+const Config = require('../models/Config')
+const { logger } = require('../utils/logger')
 
 router.get('/history/csv', async (req, res) => {
   try {
@@ -43,7 +45,7 @@ router.get('/history/csv', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.send(csv)
   } catch (error) {
-    console.error('[Export API]', error)
+    logger.error('Export history failed', { error: error.message })
     res.status(500).json({ error: 'Export failed' })
   }
 })
@@ -67,7 +69,7 @@ router.get('/config/export', async (req, res) => {
       updatedAt: config.updatedAt
     })
   } catch (error) {
-    console.error('[Config Export]', error)
+    logger.error('Export config failed', { error: error.message })
     res.status(500).json({ error: 'Export failed' })
   }
 })

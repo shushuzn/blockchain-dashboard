@@ -1,3 +1,6 @@
+const { getLogger } = require('../utils/logger')
+const logger = getLogger()
+
 const REQUIRED_ENV_VARS = [
   { name: 'JWT_SECRET', minLength: 32, sensitive: true },
   { name: 'ENCRYPTION_KEY', minLength: 32, sensitive: true },
@@ -61,19 +64,16 @@ function validateEnvironment() {
   }
 
   if (errors.length > 0) {
-    console.error('\n❌ Environment validation failed:')
-    errors.forEach(e => console.error(`  - ${e}`))
-    console.error('\n')
-    throw new Error(`Environment validation failed: ${errors.join(', ')}`)
+    const errorMsg = `Environment validation failed: ${errors.join(', ')}`
+    logger.error(`Environment validation failed: ${errorMsg}`)
+    throw new Error(errorMsg)
   }
 
   if (warnings.length > 0) {
-    console.warn('\n⚠️  Environment warnings:')
-    warnings.forEach(w => console.warn(`  - ${w}`))
-    console.warn('\n')
+    logger.warn('Environment validation warnings', { warnings })
   }
 
-  console.log('✅ Environment validation passed')
+  logger.info('Environment validation passed')
 }
 
 module.exports = { validateEnvironment, REQUIRED_ENV_VARS, OPTIONAL_ENV_VARS }

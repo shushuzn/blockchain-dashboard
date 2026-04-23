@@ -81,7 +81,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useChainStore } from '../stores/chain'
-import { LightweightCharts } from 'lightweight-charts'
+import * as LightweightCharts from 'lightweight-charts'
 
 const chainStore = useChainStore()
 

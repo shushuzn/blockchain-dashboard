@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { Role, PERMISSIONS } = require('../models/Role')
 const { requirePermission, requireRole } = require('../middleware/permissions')
+const { logger } = require('../utils/logger')
 
 router.get('/roles', requirePermission(PERMISSIONS.MANAGE_ROLES), async (req, res) => {
   try {
@@ -10,7 +11,7 @@ router.get('/roles', requirePermission(PERMISSIONS.MANAGE_ROLES), async (req, re
     })
     res.json(roles)
   } catch (error) {
-    console.error('Get roles error:', error)
+    logger.error('Get roles error', { error: error.message })
     res.status(500).json({ error: 'Failed to get roles' })
   }
 })
@@ -23,7 +24,7 @@ router.get('/roles/:id', requirePermission(PERMISSIONS.MANAGE_ROLES), async (req
     }
     res.json(role)
   } catch (error) {
-    console.error('Get role error:', error)
+    logger.error('Get role error', { error: error.message })
     res.status(500).json({ error: 'Failed to get role' })
   }
 })
@@ -44,7 +45,7 @@ router.post('/roles', requireRole('admin'), async (req, res) => {
     const role = await Role.create({ name, description, permissions })
     res.status(201).json(role)
   } catch (error) {
-    console.error('Create role error:', error)
+    logger.error('Create role error', { error: error.message })
     res.status(500).json({ error: 'Failed to create role' })
   }
 })
@@ -61,7 +62,7 @@ router.put('/roles/:id', requireRole('admin'), async (req, res) => {
 
     res.json(role)
   } catch (error) {
-    console.error('Update role error:', error)
+    logger.error('Update role error', { error: error.message })
     res.status(500).json({ error: 'Failed to update role' })
   }
 })
@@ -80,7 +81,7 @@ router.delete('/roles/:id', requireRole('admin'), async (req, res) => {
     await role.destroy()
     res.json({ success: true, message: 'Role deleted' })
   } catch (error) {
-    console.error('Delete role error:', error)
+    logger.error('Delete role error', { error: error.message })
     res.status(500).json({ error: 'Failed to delete role' })
   }
 })

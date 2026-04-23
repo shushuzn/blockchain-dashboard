@@ -1,4 +1,5 @@
 const axios = require('axios')
+const { logger } = require('../utils/logger')
 
 const AAVE_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/aave/aave-v2'
 const AAVE_V3_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/aave/aave-v3'
@@ -59,7 +60,7 @@ async function fetchAaveTVLV2() {
       timestamp: data._meta?.block?.timestamp
     }
   } catch (error) {
-    console.error('Failed to fetch Aave V2 data:', error.message)
+    logger.error('Failed to fetch Aave V2 data', { error: error.message })
     return null
   }
 }
@@ -120,7 +121,7 @@ async function fetchAaveTVLV3() {
       timestamp: data._meta?.block?.timestamp
     }
   } catch (error) {
-    console.error('Failed to fetch Aave V3 data:', error.message)
+    logger.error('Failed to fetch Aave V3 data', { error: error.message })
     return null
   }
 }

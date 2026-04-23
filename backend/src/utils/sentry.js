@@ -1,5 +1,6 @@
 const Sentry = require('@sentry/node')
 const { nodeProfilingIntegration } = require('@sentry/profiling-node')
+const { logger } = require('./logger')
 
 let isInitialized = false
 
@@ -7,7 +8,7 @@ function initSentry() {
   const dsn = process.env.SENTRY_DSN
   
   if (!dsn) {
-    console.log('[Sentry] SENTRY_DSN not configured, skipping initialization')
+    logger.info('Sentry initialization skipped - SENTRY_DSN not configured')
     return false
   }
 
@@ -25,7 +26,7 @@ function initSentry() {
     profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     beforeSend(event) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('[Sentry] Event captured:', event.message)
+        logger.debug('Sentry event captured', { message: event.message })
       }
       return event
     },
@@ -38,7 +39,7 @@ function initSentry() {
   })
 
   isInitialized = true
-  console.log('[Sentry] Initialized successfully')
+  logger.info('Sentry initialized successfully')
   return true
 }
 
@@ -59,7 +60,7 @@ function getSentryTrenerHandler() {
 function getErrorHandler() {
   if (!isInitialized) {
     return (err, req, res, next) => {
-      console.error('[Unhandled Error]', err)
+      logger.error('Unhandled error', { error: err.message, stack: err.stack })
       res.status(500).json({ error: 'Internal server error' })
     }
   }
@@ -68,7 +69,7 @@ function getErrorHandler() {
 
 function captureException(error, context = {}) {
   if (!isInitialized) {
-    console.error('[Error]', error, context)
+    logger.error('Error captured', { error: error.message, context })
     return null
   }
   return Sentry.captureException(error, { extra: context })
@@ -76,7 +77,7 @@ function captureException(error, context = {}) {
 
 function captureMessage(message, level = 'info') {
   if (!isInitialized) {
-    console.log(`[${level.toUpperCase()}]`, message)
+    logger.info('Message captured', { message, level })
     return null
   }
   return Sentry.captureMessage(message, level)

@@ -2,20 +2,21 @@ const axios = require('axios')
 const { syncWalletPositions } = require('../models/Portfolio')
 const { walletLookup } = require('./walletLookup')
 const { getPrices } = require('./prices')
+const { logger } = require('../utils/logger')
 
 const PROTOCOLS = {
   aave: {
     name: 'Aave',
-    v2: '0x7d2768dE32F0bBCf5681a98fA624f2d5D7a73Ad0D83eA8d00', // Aave V2 Pool
-    v3: '0x87870Bfa3bc78c6C2d8E78E92def84B9D5E3EAd9E2Aa5', // Aave V3 Pool
+    v2: '0x7d2768dE32F0bBCf5681a98fA624f2d5D7a73Ad0D83eA8d00',
+    v3: '0x87870Bfa3bc78c6C2d8E78E92def84B9D5E3EAd9E2Aa5',
   },
   lido: {
     name: 'Lido',
-    address: '0xae7ab96520DE3A6E135e6c4E5CEa48aFBa5CE50aD2', // LDO Token
+    address: '0xae7ab96520DE3A6E135e6c4E5CEa48aFBa5CE50aD2',
   },
   compound: {
     name: 'Compound',
-    address: '0x3d9819210A31b4962b30eBbeD0593845Ff231540E', // Comptroller
+    address: '0x3d9819210A31b4962b30eBbeD0593845Ff231540E',
   },
 }
 
@@ -28,21 +29,21 @@ async function getWalletPositions(walletAddress, chain = 'ethereum') {
     const aavePositions = await getAavePositions(walletAddress, ethPrice)
     positions.push(...aavePositions)
   } catch (err) {
-    console.error('Aave positions error:', err.message)
+    logger.error('Aave positions error', { error: err.message })
   }
 
   try {
     const lidoPosition = await getLidoPosition(walletAddress, ethPrice)
     if (lidoPosition) positions.push(lidoPosition)
   } catch (err) {
-    console.error('Lido position error:', err.message)
+    logger.error('Lido position error', { error: err.message })
   }
 
   try {
     const tokenPositions = await getERC20Positions(walletAddress, ethPrice)
     positions.push(...tokenPositions)
   } catch (err) {
-    console.error('Token positions error:', err.message)
+    logger.error('Token positions error', { error: err.message })
   }
 
   return positions
@@ -149,7 +150,7 @@ async function getERC20Positions(walletAddress, ethPrice) {
       }
     })
   } catch (err) {
-    console.error('ERC20 positions error:', err.message)
+    logger.error('ERC20 positions error', { error: err.message })
   }
 
   return positions

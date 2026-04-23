@@ -1,10 +1,12 @@
-const { Sequelize } = require('sequelize')
+let sequelize = null
+let isConnected = false
+const { logger } = require('../utils/logger')
 
 const getDatabaseConfig = () => {
   const dialect = process.env.DB_DIALECT || 'sqlite'
   
   const baseConfig = {
-    logging: process.env.NODE_ENV === 'development' ? (msg) => console.log(msg) : false,
+    logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
       max: 5,
       min: 0,
@@ -43,33 +45,76 @@ const getDatabaseConfig = () => {
   }
 }
 
-const DB_CONFIG = getDatabaseConfig()
-const sequelize = new Sequelize(DB_CONFIG)
-
-sequelize.beforeConnect((config) => {
-  console.log('[DB] Connecting to database...')
-})
-
-sequelize.afterConnect((connection, config) => {
-  console.log('[DB] Connected successfully')
-})
-
-sequelize.afterDisconnect((connection, config) => {
-  console.warn('[DB] Disconnected')
-})
-
-async function testConnection() {
+function initializeDatabase() {
   try {
-    await sequelize.authenticate()
-    console.log('Database connection successful')
+    const DB_CONFIG = getDatabaseConfig()
+    const { Sequelize } = require('sequelize')
+    sequelize = new Sequelize(DB_CONFIG)
+    
+    sequelize.beforeConnect(() => {
+      logger.info('Connecting to database')
+    })
+
+    sequelize.afterConnect(() => {
+      logger.info('Database connected successfully')
+      isConnected = true
+    })
+
+    sequelize.afterDisconnect(() => {
+      logger.warn('Database disconnected')
+      isConnected = false
+    })
   } catch (error) {
-    console.error('Database connection failed:', error)
+    logger.warn('Database initialization skipped', { error: error.message })
+    sequelize = null
   }
 }
 
-if (process.env.NODE_ENV !== 'test') {
-  testConnection()
+async function testConnection() {
+  if (!sequelize) {
+    logger.warn('Database not initialized')
+    return false
+  }
+  
+  try {
+    await sequelize.authenticate()
+    logger.info('Database connection successful')
+    isConnected = true
+    return true
+  } catch (error) {
+    logger.warn('Database connection failed', { error: error.message })
+    logger.warn('Running in mock mode - database features disabled')
+    isConnected = false
+    return false
+  }
 }
 
-module.exports = sequelize
-module.exports.getDatabaseConfig = getDatabaseConfig
+function isDatabaseConnected() {
+  return isConnected && sequelize !== null
+}
+
+initializeDatabase()
+
+if (process.env.NODE_ENV !== 'test' && process.env.SKIP_DB !== 'true') {
+  testConnection().catch(err => {
+    logger.warn('Database connection test failed', { error: err.message })
+  })
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getDatabaseConfig,
+    testConnection,
+    isDatabaseConnected,
+    initializeDatabase,
+    sequelize
+  }
+}
+
+if (typeof exports !== 'undefined') {
+  exports.getDatabaseConfig = getDatabaseConfig
+  exports.testConnection = testConnection
+  exports.isDatabaseConnected = isDatabaseConnected
+  exports.initializeDatabase = initializeDatabase
+  exports.sequelize = sequelize
+}

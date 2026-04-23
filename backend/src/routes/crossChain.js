@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const chainStore = require('../stores/chain')
+const { logger } = require('../utils/logger')
 
 const L2_CHAINS = ['base', 'arbitrum', 'optimism', 'zksync', 'starknet']
 
@@ -142,7 +143,7 @@ router.get('/cross-chain', (req, res) => {
     const aggregated = aggregateCrossChain()
     res.json(aggregated)
   } catch (error) {
-    console.error('Cross-chain aggregation error:', error)
+    logger.error('Cross-chain aggregation error', { error: error.message })
     res.status(500).json({ error: 'Failed to aggregate cross-chain data' })
   }
 })
@@ -152,7 +153,7 @@ router.get('/l2-comparison', (req, res) => {
     const comparison = compareL2()
     res.json(comparison)
   } catch (error) {
-    console.error('L2 comparison error:', error)
+    logger.error('L2 comparison error', { error: error.message })
     res.status(500).json({ error: 'Failed to compare L2 chains' })
   }
 })
@@ -165,7 +166,7 @@ router.get('/arbitrage', (req, res) => {
       total: opportunities.length,
     })
   } catch (error) {
-    console.error('Arbitrage detection error:', error)
+    logger.error('Arbitrage detection error', { error: error.message })
     res.status(500).json({ error: 'Failed to detect arbitrage opportunities' })
   }
 })
@@ -191,7 +192,7 @@ router.get('/gas-index', (req, res) => {
       mostExpensive: ranked[ranked.length - 1],
     })
   } catch (error) {
-    console.error('Gas index error:', error)
+    logger.error('Gas index error', { error: error.message })
     res.status(500).json({ error: 'Failed to calculate gas index' })
   }
 })

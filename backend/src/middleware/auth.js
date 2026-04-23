@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const { logger } = require('../utils/logger')
 
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) {
@@ -52,7 +53,7 @@ function addToBlacklist(token, reason = 'logout') {
     }
     return false
   } catch (err) {
-    console.error('Failed to blacklist token:', err)
+    logger.error('Failed to blacklist token', { error: err.message })
     return false
   }
 }
@@ -73,7 +74,7 @@ function cleanupBlacklist() {
   }
 
   if (cleaned > 0) {
-    console.log(`Blacklist cleanup: removed ${cleaned} expired entries`)
+    logger.info('Blacklist cleanup completed', { removed: cleaned })
   }
 
   return cleaned

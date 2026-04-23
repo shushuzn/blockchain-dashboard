@@ -1,5 +1,6 @@
 const axios = require('axios')
 const { DCAOrder, calculateNextExecution } = require('../models/DCA')
+const { logger } = require('../utils/logger')
 
 const DEX_AGGREGATORS = {
   '1inch': 'https://api.1inch.dev/swap/v5.2',
@@ -62,7 +63,7 @@ async function getSwapQuote(fromToken, toToken, amount, slippage) {
 
     return response.data
   } catch (err) {
-    console.error('Quote error:', err.message)
+    logger.error('Quote error', { error: err.message })
     return getFallbackQuote(fromToken, toToken, amount)
   }
 }

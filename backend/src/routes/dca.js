@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { DCAOrder, getOrderHistory, calculateNextExecution } = require('../models/DCA')
 const { executeDCA, simulateDCA, getCurrentGasPrice } = require('../services/dcaExecutor')
+const { logger } = require('../utils/logger')
 
 router.post('/orders', async (req, res) => {
   try {
@@ -38,7 +39,7 @@ router.post('/orders', async (req, res) => {
       message: 'DCA order created successfully',
     })
   } catch (error) {
-    console.error('Create DCA order error:', error)
+    logger.error('Create DCA order error', { error: error.message })
     res.status(500).json({ error: 'Failed to create DCA order' })
   }
 })
@@ -69,7 +70,7 @@ router.get('/orders', async (req, res) => {
       count: orders.length,
     })
   } catch (error) {
-    console.error('Get DCA orders error:', error)
+    logger.error('Get DCA orders error', { error: error.message })
     res.status(500).json({ error: 'Failed to get orders' })
   }
 })
@@ -109,7 +110,7 @@ router.get('/orders/:id', async (req, res) => {
       })),
     })
   } catch (error) {
-    console.error('Get DCA order error:', error)
+    logger.error('Get DCA order error', { error: error.message })
     res.status(500).json({ error: 'Failed to get order' })
   }
 })
@@ -136,7 +137,7 @@ router.patch('/orders/:id', async (req, res) => {
 
     res.json({ success: true, order: { id: order.id, ...updates } })
   } catch (error) {
-    console.error('Update DCA order error:', error)
+    logger.error('Update DCA order error', { error: error.message })
     res.status(500).json({ error: 'Failed to update order' })
   }
 })
@@ -144,11 +145,11 @@ router.patch('/orders/:id', async (req, res) => {
 router.delete('/orders/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const deleted = await DCAOrder.update({ status: 'cancelled' }, { where: { id } })
+    await DCAOrder.update({ status: 'cancelled' }, { where: { id } })
 
     res.json({ success: true, message: 'Order cancelled' })
   } catch (error) {
-    console.error('Cancel DCA order error:', error)
+    logger.error('Cancel DCA order error', { error: error.message })
     res.status(500).json({ error: 'Failed to cancel order' })
   }
 })
@@ -166,14 +167,14 @@ router.post('/orders/:id/execute', async (req, res) => {
       return res.status(400).json({ error: 'Order is not active' })
     }
 
-    const result = await executeOrder(order)
+    const result = await executeDCA(order)
 
     res.json({
       success: true,
       execution: result,
     })
   } catch (error) {
-    console.error('Execute DCA error:', error)
+    logger.error('Execute DCA error', { error: error.message })
     res.status(500).json({ error: error.message })
   }
 })
@@ -196,7 +197,7 @@ router.get('/orders/:id/simulate', async (req, res) => {
       recommendation: gasPrice > 50 ? 'High gas - consider waiting' : 'Good time to execute',
     })
   } catch (error) {
-    console.error('Simulate DCA error:', error)
+    logger.error('Simulate DCA error', { error: error.message })
     res.status(500).json({ error: 'Failed to simulate' })
   }
 })

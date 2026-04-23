@@ -6,28 +6,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: App,
-      children: [
-        {
-          path: '',
-          redirect: '/monitor'
-        },
-        {
-          path: 'monitor',
-          name: 'monitor',
-          component: () => import('../components/ChainMonitor.vue')
-        },
-        {
-          path: 'charts',
-          name: 'charts',
-          component: () => import('../components/ChartsView.vue')
-        },
-        {
-          path: 'meme',
-          name: 'meme',
-          component: () => import('../components/MemeView.vue')
-        }
-      ]
+      component: App
     }
   ]
 })

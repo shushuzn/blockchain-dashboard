@@ -1,4 +1,5 @@
 const axios = require('axios')
+const { logger } = require('../utils/logger')
 
 const RETRY_CONFIG = {
   maxRetries: 3,
@@ -36,6 +37,8 @@ async function sendWebhook(webhookUrl, payload, headers = {}, options = {}) {
         timeout: 10000
       })
       
+      logger.info('Webhook sent successfully', { webhookUrl, status: response.status, attempts: attempt + 1 })
+      
       return {
         success: true,
         status: response.status,
@@ -51,7 +54,7 @@ async function sendWebhook(webhookUrl, payload, headers = {}, options = {}) {
           RETRY_CONFIG.initialDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt),
           RETRY_CONFIG.maxDelay
         )
-        console.warn(`[Webhook] Retry ${attempt + 1}/${maxRetries} after ${delay}ms (status: ${status})`)
+        logger.warn('Webhook retry', { webhookUrl, attempt: attempt + 1, maxRetries, delay, status })
         await sleep(delay)
         continue
       }
@@ -69,7 +72,7 @@ async function sendWebhook(webhookUrl, payload, headers = {}, options = {}) {
         failureCount: (failedWebhooks.get(webhookUrl)?.failureCount || 0) + 1
       })
       
-      console.error('[Webhook] Send failed after retries:', errorInfo)
+      logger.error('Webhook send failed', { webhookUrl, error: errorInfo })
       
       return errorInfo
     }
@@ -128,11 +131,19 @@ async function sendAlertWebhook(webhookConfig, alert) {
   return sendWebhook(webhookConfig.url, payload, webhookConfig.headers)
 }
 
+function getFailedWebhooksInfo() {
+  const info = {}
+  for (const [url, data] of failedWebhooks.entries()) {
+    info[url] = { ...data }
+  }
+  return info
+}
+
 module.exports = {
   sendWebhook,
   sendAlertWebhook,
   buildAlertPayload,
   RETRY_CONFIG,
-  getFailedWebhooks: () => Object.fromEntries(failedWebhooks),
+  getFailedWebhooks: getFailedWebhooksInfo,
   clearFailedWebhook: (url) => failedWebhooks.delete(url)
 }

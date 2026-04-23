@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
-import { historyApi } from '../api'
+import { historyApi, configApi } from '../api'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('chainStore')
 
 const CHAINS = [
   { id: 'ethereum',  name: 'Ethereum',   color: '#627eea', rpc: 'https://eth.llamarpc.com',       explorer: 'https://etherscan.io',            decimals: 18, hasBlob: true, hasMEV: true },
@@ -43,7 +46,17 @@ export const useChainStore = defineStore('chain', {
         this.ethChange = d.ethereum.usd_24h_change
         this.btcPrice = '$' + d.bitcoin.usd.toLocaleString()
       } catch(e) {
-        console.error('Failed to fetch price:', e)
+        logger.error('Failed to fetch price:', { error: e })
+      }
+    },
+
+    async loadConfig() {
+      try {
+        const config = await configApi.getConfig()
+        return config
+      } catch (error) {
+        logger.error('Failed to load config:', { error })
+        return null
       }
     },
 
@@ -141,7 +154,7 @@ export const useChainStore = defineStore('chain', {
         }
         this.historyFromApi = true
       } catch (error) {
-        console.warn('Failed to load history from API, using localStorage:', error.message)
+        logger.warn('Failed to load history from API, using localStorage:', { error: error.message })
         this.loadHistoryFromLocal()
         this.historyFromApi = false
       }
@@ -187,7 +200,7 @@ export const useChainStore = defineStore('chain', {
             point.util
           )
         } catch (error) {
-          console.warn('Failed to save to API, saving locally:', error.message)
+          logger.warn('Failed to save to API, saving locally:', { error: error.message })
           this.saveHistoryToLocal()
         }
       } else {
@@ -212,10 +225,10 @@ export const useChainStore = defineStore('chain', {
         }
       } catch(e) {
         if (e.name === 'QuotaExceededError') {
-          console.warn('Storage quota exceeded, reducing history data')
+          logger.warn('Storage quota exceeded, reducing history data')
           this.reduceStorageUsage()
         } else {
-          console.warn('Failed to save history locally:', e.message)
+          logger.warn('Failed to save history locally:', { error: e.message })
         }
       }
     },
@@ -230,7 +243,7 @@ export const useChainStore = defineStore('chain', {
       try {
         localStorage.setItem(HISTORY_KEY, JSON.stringify(this.history))
       } catch(e) {
-        console.warn('Failed to save reduced history:', e.message)
+        logger.warn('Failed to save reduced history:', { error: e.message })
       }
     },
 
@@ -249,7 +262,7 @@ export const useChainStore = defineStore('chain', {
         }
         return null
       } catch (error) {
-        console.error('Failed to fetch MEV data:', error)
+        logger.error('Failed to fetch MEV data:', { error, chain: chain.id })
         return null
       }
     }

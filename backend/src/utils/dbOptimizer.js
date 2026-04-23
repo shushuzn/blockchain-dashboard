@@ -1,13 +1,14 @@
 const sequelize = require('../config/database')
+const { logger } = require('./logger')
 
 async function addIndexes() {
   try {
     await sequelize.query(`
       CREATE INDEX IF NOT EXISTS idx_config_userId ON config(userId);
     `)
-    console.log('Database indexes created successfully')
+    logger.info('Database indexes created successfully')
   } catch (error) {
-    console.error('Error creating indexes:', error.message)
+    logger.error('Error creating indexes', { error: error.message })
   }
 }
 
@@ -22,12 +23,12 @@ async function addQueryMonitoring() {
       const duration = Date.now() - start
       
       if (duration > 100) {
-        console.warn(`Slow query detected (${duration}ms):`, sql.substring(0, 200))
+        logger.warn('Slow query detected', { duration, sql: sql.substring(0, 200) })
       }
       
       return result
     } catch (error) {
-      console.error('Query error:', error.message, '\nSQL:', sql.substring(0, 200))
+      logger.error('Query error', { error: error.message, sql: sql.substring(0, 200) })
       throw error
     }
   }
@@ -39,9 +40,9 @@ async function optimizeDatabase() {
     await sequelize.query('PRAGMA synchronous = NORMAL;')
     await sequelize.query('PRAGMA cache_size = -64000;')
     await sequelize.query('PRAGMA temp_store = MEMORY;')
-    console.log('SQLite pragmas optimized')
+    logger.info('SQLite pragmas optimized')
   } catch (error) {
-    console.error('Error optimizing database:', error.message)
+    logger.error('Error optimizing database', { error: error.message })
   }
 }
 
@@ -54,14 +55,14 @@ async function analyzeTables() {
       WHERE type='table' AND name NOT LIKE 'sqlite_%'
     `)
     
-    console.log('Database tables:')
+    logger.info('Database tables analyzed', { tableCount: tables.length })
     tables.forEach(table => {
-      console.log(`  ${table.name}: ${table.index_count} indexes`)
+      logger.debug('Table info', { name: table.name, indexCount: table.index_count })
     })
     
     return tables
   } catch (error) {
-    console.error('Error analyzing tables:', error.message)
+    logger.error('Error analyzing tables', { error: error.message })
     return []
   }
 }

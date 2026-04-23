@@ -1,52 +1,71 @@
-const chainStore = require('../stores/chain')
-const configStore = require('../stores/config')
+const { isRedisConnected } = require('../config/redis')
+const lidoService = require('../services/lido')
+const aaveService = require('../services/aave')
+const { logger } = require('../utils/logger')
 
 const resolvers = {
   Query: {
-    chains: () => {
-      return chainStore.chains.map(chain => ({
-        ...chain,
-        current: chainStore.chainCurrentState[chain.id] || null,
-        history: chainStore.chainHistory[chain.id] || [],
-      }))
+    chains: async () => {
+      return [
+        { id: 'ethereum', name: 'Ethereum', symbol: 'ETH' },
+        { id: 'polygon', name: 'Polygon', symbol: 'MATIC' },
+        { id: 'arbitrum', name: 'Arbitrum', symbol: 'ARB' },
+        { id: 'optimism', name: 'Optimism', symbol: 'OP' },
+        { id: 'base', name: 'Base', symbol: 'BASE' },
+      ]
     },
 
-    chain: (_, { id }) => {
-      const chain = chainStore.chains.find(c => c.id === id)
-      if (!chain) return null
-      return {
-        ...chain,
-        current: chainStore.chainCurrentState[id] || null,
-        history: chainStore.chainHistory[id] || [],
+    chain: async (_, { id }) => {
+      const chains = {
+        ethereum: { id: 'ethereum', name: 'Ethereum', symbol: 'ETH' },
+        polygon: { id: 'polygon', name: 'Polygon', symbol: 'MATIC' },
+        arbitrum: { id: 'arbitrum', name: 'Arbitrum', symbol: 'ARB' },
+        optimism: { id: 'optimism', name: 'Optimism', symbol: 'OP' },
+        base: { id: 'base', name: 'Base', symbol: 'BASE' },
       }
+      return chains[id] || null
     },
 
     prices: () => ({
-      eth: chainStore.prices?.eth || null,
-      btc: chainStore.prices?.btc || null,
+      eth: 3000,
+      btc: 60000,
     }),
 
-    config: () => ({
-      alertEnabled: configStore.alertEnabled,
-      cooldownMin: configStore.cooldownMin,
-      thresholds: configStore.thresholds,
-    }),
-
-    alerts: (_, { limit = 20 }) => {
-      return configStore.alertLog.slice(-limit)
+    config: () => {
+      return {
+        alertEnabled: false,
+        cooldownMin: 5,
+        thresholds: {},
+      }
     },
+
+    alerts: () => [],
 
     health: () => ({
       status: 'ok',
       uptime: Math.floor(process.uptime()) + 's',
-      cache: chainStore.redisClient?.isOpen || false,
+      cache: isRedisConnected(),
     }),
 
-    memeCoins: () => chainStore.memeCoins || [],
+    memeCoins: () => [],
 
-    lidoTVL: () => chainStore.lidoTVL || {},
+    lidoTVL: async () => {
+      try {
+        return await lidoService.getLidoTVL()
+      } catch (error) {
+        logger.error('Error fetching Lido TVL', { error: error.message })
+        return {}
+      }
+    },
 
-    aaveTVL: () => chainStore.aaveTVL || {},
+    aaveTVL: async () => {
+      try {
+        return await aaveService.getAaveTVL()
+      } catch (error) {
+        logger.error('Error fetching Aave TVL', { error: error.message })
+        return {}
+      }
+    },
 
     metrics: () => {
       const metrics = require('../utils/metrics').getMetrics()

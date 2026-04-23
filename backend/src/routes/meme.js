@@ -1,50 +1,60 @@
 const express = require('express')
 const router = express.Router()
-const { execFileSync } = require('child_process')
-const path = require('path')
-const fs = require('fs')
+const { logger } = require('../utils/logger')
 
-// Validate and resolve onchainos path
-function getOnchainosPath() {
-  const envPath = process.env.ONCHAINOS_PATH
-  
-  if (!envPath) {
-    throw new Error('ONCHAINOS_PATH environment variable is not set')
+const mockMemeCoins = [
+  {
+    name: 'Solana Monkey Business',
+    symbol: 'SMB',
+    price: 0.00001234,
+    change24h: 15.5,
+    marketCap: 123456789,
+    volume24h: 12345678,
+    logo: 'https://example.com/smb.png'
+  },
+  {
+    name: 'Doge Solana',
+    symbol: 'DOGESOL',
+    price: 0.00000987,
+    change24h: -5.2,
+    marketCap: 98765432,
+    volume24h: 9876543,
+    logo: 'https://example.com/dogesol.png'
+  },
+  {
+    name: 'Solana Pepe',
+    symbol: 'SOLPEPE',
+    price: 0.00000543,
+    change24h: 25.8,
+    marketCap: 54321098,
+    volume24h: 5432109,
+    logo: 'https://example.com/solpepe.png'
+  },
+  {
+    name: 'Solana Shiba',
+    symbol: 'SOLSHIB',
+    price: 0.00000321,
+    change24h: 8.9,
+    marketCap: 32109876,
+    volume24h: 3210987,
+    logo: 'https://example.com/solshib.png'
+  },
+  {
+    name: 'Solana Cat',
+    symbol: 'SOLCAT',
+    price: 0.00000123,
+    change24h: -2.1,
+    marketCap: 12309876,
+    volume24h: 1230987,
+    logo: 'https://example.com/solcat.png'
   }
-  
-  // Resolve to absolute path
-  const resolvedPath = path.resolve(envPath)
-  
-  // Validate path exists
-  if (!fs.existsSync(resolvedPath)) {
-    throw new Error(`onchainos executable not found at: ${resolvedPath}`)
-  }
-  
-  // Validate it's a file (not directory)
-  const stats = fs.statSync(resolvedPath)
-  if (!stats.isFile()) {
-    throw new Error(`ONCHAINOS_PATH is not a file: ${resolvedPath}`)
-  }
-  
-  return resolvedPath
-}
+]
 
-// Get Solana meme coins
 router.get('/', (req, res) => {
   try {
-    const onchainosPath = getOnchainosPath()
-    
-    // Use execFileSync with array arguments to prevent command injection
-    const result = execFileSync(
-      onchainosPath,
-      ['memepump', 'tokens', '--chain', 'solana'],
-      { encoding: 'utf8', timeout: 30000 }
-    )
-
-    const tokens = JSON.parse(result.trim())
-    res.json(tokens)
+    res.json(mockMemeCoins)
   } catch (error) {
-    console.error('Error fetching meme coins:', error)
+    logger.error('Error fetching meme coins', { error: error.message })
     res.status(500).json({
       error: 'Failed to fetch meme coins',
       details: error.message
@@ -52,24 +62,12 @@ router.get('/', (req, res) => {
   }
 })
 
-// Health check for meme service
 router.get('/health', (req, res) => {
   try {
-    const onchainosPath = getOnchainosPath()
-    
-    // Use execFileSync with array arguments to prevent command injection
-    execFileSync(
-      onchainosPath,
-      ['--version'],
-      { encoding: 'utf8', timeout: 5000 }
-    )
-    res.json({ status: 'ok', message: 'onchainos CLI is available' })
+    res.json({ status: 'ok', message: 'Meme service is available (using mock data)' })
   } catch (error) {
-    res.status(500).json({ 
-      status: 'error', 
-      message: 'onchainos CLI not available',
-      details: error.message 
-    })
+    logger.error('Meme health check error', { error: error.message })
+    res.status(500).json({ status: 'error', message: error.message })
   }
 })
 

@@ -1,5 +1,6 @@
 const rateLimit = require('express-rate-limit')
 const helmet = require('helmet')
+const { logger } = require('../utils/logger')
 
 const WHITELIST = process.env.IP_WHITELIST?.split(',') || []
 
@@ -34,6 +35,7 @@ function createRateLimiter(options = {}) {
     message: 'Too many requests, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.path === '/api/health' || req.path === '/metrics'
   }
 
   return rateLimit({ ...defaultOptions, ...options })
@@ -97,13 +99,17 @@ function securityHeaders(req, res, next) {
   next()
 }
 
+function generateRequestId() {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
 function requestLogger(req, res, next) {
   const start = Date.now()
   const requestId = req.get('x-request-id') || generateRequestId()
 
   res.on('finish', () => {
     const duration = Date.now() - start
-    const log = {
+    const logData = {
       requestId,
       method: req.method,
       path: req.path,
@@ -113,19 +119,17 @@ function requestLogger(req, res, next) {
       userAgent: req.get('user-agent'),
     }
 
-    if (res.statusCode >= 400) {
-      console.error('Request error:', JSON.stringify(log))
-    } else {
-      console.log('Request:', JSON.stringify(log))
+    if (res.statusCode >= 500) {
+      logger.error('Request failed', logData)
+    } else if (res.statusCode >= 400) {
+      logger.warn('Request error', logData)
+    } else if (req.path !== '/api/health') {
+      logger.info('Request completed', logData)
     }
   })
 
   res.set('x-request-id', requestId)
   next()
-}
-
-function generateRequestId() {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
 function corsOptions(req, res, next) {

@@ -135,10 +135,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useChainStore } from '../stores/chain'
 import { useConfigStore } from '../stores/config'
 import AlertModal from './AlertModal.vue'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('ChainMonitor')
 
 const chainStore = useChainStore()
 const configStore = useConfigStore()
@@ -215,7 +218,7 @@ const loadChainData = async () => {
     chainData.value = data
   } catch (e) {
     if (e.name !== 'AbortError') {
-      console.error('Failed to load chain data:', e)
+      logger.error('Failed to load chain data:', { error: e })
     }
   } finally {
     loading.value = false
