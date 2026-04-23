@@ -8,6 +8,10 @@ class AppError extends Error {
   }
 }
 
+function generateRequestId() {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
 class ValidationError extends AppError {
   constructor(message, details = null) {
     super(message, 400, 'VALIDATION_ERROR')
@@ -35,10 +39,13 @@ class RateLimitError extends AppError {
 
 function errorResponse(res, error) {
   const statusCode = error.statusCode || 500
+  const requestId = res.get('x-request-id') || generateRequestId()
+  
   const response = {
     error: error.code || 'INTERNAL_ERROR',
     message: error.message || 'An unexpected error occurred',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    requestId
   }
   
   if (error.details) {
@@ -49,7 +56,7 @@ function errorResponse(res, error) {
     response.stack = error.stack
   }
   
-  console.error(`[ERROR] ${error.code}: ${error.message}`)
+  console.error(`[ERROR] ${error.code}: ${error.message} [${requestId}]`)
   
   return res.status(statusCode).json(response)
 }

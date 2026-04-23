@@ -47,7 +47,7 @@ async function sendWebhook(webhook, event, data) {
   const maxRetries = webhook.retry?.maxRetries || MAX_RETRIES
   const backoff = webhook.retry?.backoff || 'exponential'
 
-  for (let attempt = 1; attempt <= maxRetries; i++) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(webhook.url, {
         method: 'POST',

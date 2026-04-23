@@ -1,8 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { DCAOrder, getOrderHistory, calculateNextExecution } = require('../models/DCA')
-const { executeOrder, simulateDCA } = require('../services/dcaExecutor')
-const { getCurrentGasPrice } = require('../services/dcaExecutor')
+const { executeDCA, simulateDCA, getCurrentGasPrice } = require('../services/dcaExecutor')
 
 router.post('/orders', async (req, res) => {
   try {
@@ -66,7 +65,7 @@ router.get('/orders', async (req, res) => {
         nextExecution: o.nextExecution,
         totalExecuted: o.totalExecuted,
         totalAmount: o.totalAmount,
-      }),
+      })),
       count: orders.length,
     })
   } catch (error) {
@@ -107,7 +106,7 @@ router.get('/orders/:id', async (req, res) => {
         status: h.status,
         executedAt: h.executedAt,
         hash: h.hash,
-      }),
+      })),
     })
   } catch (error) {
     console.error('Get DCA order error:', error)

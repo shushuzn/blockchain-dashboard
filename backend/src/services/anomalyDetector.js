@@ -90,7 +90,7 @@ function predictNextValue(chainId, metric, periods = 5) {
   for (let i = 1; i <= periods; i++) {
     predictions.push({
       period: i,
-      predicted: Math.max(0, intercept + slope * (n + i - 1),
+      predicted: Math.max(0, intercept + slope * (n + i - 1)),
     })
   }
 

@@ -94,6 +94,25 @@ export default defineConfig({
   },
   build: {
     outDir: '../../dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          'vendor-charts': ['lightweight-charts'],
+          'vendor-i18n': ['vue-i18n']
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      }
+    },
+    chunkSizeWarningLimit: 500,
+    sourcemap: process.env.NODE_ENV !== 'production',
+    minify: 'esbuild',
+    target: 'esnext'
+  },
+  optimizeDeps: {
+    include: ['vue', 'vue-router', 'pinia', 'axios', 'lightweight-charts']
   }
 })

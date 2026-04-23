@@ -1,6 +1,16 @@
 const jwt = require('jsonwebtoken')
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-this-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
+if (JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters for security')
+}
+if (JWT_SECRET === 'change-this-in-production' || JWT_SECRET === 'your-secret-key-here') {
+  throw new Error('JWT_SECRET cannot be a default or placeholder value')
+}
+
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d'
 

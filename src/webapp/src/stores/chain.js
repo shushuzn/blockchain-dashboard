@@ -207,9 +207,30 @@ export const useChainStore = defineStore('chain', {
         const data = JSON.stringify(this.history)
         if (data.length < 4 * 1024 * 1024) {
           localStorage.setItem(HISTORY_KEY, data)
+        } else {
+          this.reduceStorageUsage()
         }
       } catch(e) {
-        console.warn('Failed to save history locally:', e.message)
+        if (e.name === 'QuotaExceededError') {
+          console.warn('Storage quota exceeded, reducing history data')
+          this.reduceStorageUsage()
+        } else {
+          console.warn('Failed to save history locally:', e.message)
+        }
+      }
+    },
+
+    reduceStorageUsage() {
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+      for (const chainId in this.history) {
+        if (this.history[chainId]) {
+          this.history[chainId] = this.history[chainId].filter(p => p.t >= cutoff)
+        }
+      }
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(this.history))
+      } catch(e) {
+        console.warn('Failed to save reduced history:', e.message)
       }
     },
 

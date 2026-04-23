@@ -3,7 +3,7 @@ const router = express.Router()
 const Config = require('../models/Config')
 const { encrypt, decrypt } = require('../utils/encryption')
 
-// Get config
+// Get config (sensitive data sanitized)
 router.get('/', async (req, res) => {
   try {
     const { userId = 'default' } = req.query
@@ -11,7 +11,6 @@ router.get('/', async (req, res) => {
     let config = await Config.findOne({ where: { userId } })
     
     if (!config) {
-      // Create default config if not exists
       config = await Config.create({ userId })
     }
 
@@ -20,6 +19,34 @@ router.get('/', async (req, res) => {
       thresholds: JSON.parse(config.thresholds),
       alertLog: JSON.parse(config.alertLog),
       alertState: JSON.parse(config.alertState),
+      hasTelegramToken: !!config.telegramToken,
+      hasTelegramChatId: !!config.telegramChatId,
+      hasSmtpConfig: !!config.smtpUser,
+      telegramToken: undefined,
+      telegramChatId: undefined,
+      smtpUser: undefined,
+      smtpPass: undefined,
+      smtpTo: undefined
+    })
+  } catch (error) {
+    console.error('Error fetching config:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Get sensitive config (requires authentication in real app)
+router.get('/sensitive', async (req, res) => {
+  try {
+    const { userId = 'default' } = req.query
+    
+    let config = await Config.findOne({ where: { userId } })
+    
+    if (!config) {
+      config = await Config.create({ userId })
+    }
+
+    res.json({
+      thresholds: JSON.parse(config.thresholds),
       telegramToken: config.telegramToken ? decrypt(config.telegramToken) : '',
       telegramChatId: config.telegramChatId ? decrypt(config.telegramChatId) : '',
       smtpUser: config.smtpUser ? decrypt(config.smtpUser) : '',
@@ -27,7 +54,7 @@ router.get('/', async (req, res) => {
       smtpTo: config.smtpTo ? decrypt(config.smtpTo) : ''
     })
   } catch (error) {
-    console.error('Error fetching config:', error)
+    console.error('Error fetching sensitive config:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

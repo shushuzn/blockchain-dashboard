@@ -43,7 +43,7 @@ router.get('/wallets', async (req, res) => {
         label: w.label,
         chain: w.chain,
         lastSynced: w.updatedAt,
-      }),
+      })),
       count: wallets.length,
     })
   } catch (error) {
@@ -200,7 +200,7 @@ async function syncWalletData(walletId, address, chain) {
 
   try {
     const positions = await getWalletPositions(address, chain)
-    await syncWalletPositions(wallet.id, positions.map(p => ({ ...p, walletId: wallet.id }))
+    await syncWalletPositions(wallet.id, positions.map(p => ({ ...p, walletId: wallet.id })))
     console.log(`Synced ${positions.length} positions for ${address}`)
   } catch (err) {
     console.error('Sync positions error:', err)

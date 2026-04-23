@@ -1,13 +1,35 @@
 const { Tenant, checkPlanLimits } = require('../models/Tenant')
 const { verifyToken } = require('../middleware/auth')
 
+const tenantCache = new Map()
+const CACHE_TTL = 60000
+
+function getCachedTenant(id, lookupFn) {
+  const cached = tenantCache.get(id)
+  if (cached && Date.now() < cached.expires) {
+    return Promise.resolve(cached.data)
+  }
+  return lookupFn().then(data => {
+    if (data) {
+      tenantCache.set(id, { data, expires: Date.now() + CACHE_TTL })
+    }
+    return data
+  })
+}
+
+function clearTenantCache(tenantId) {
+  tenantCache.delete(tenantId)
+}
+
 async function tenantMiddleware(req, res, next) {
   const tenantId = req.headers['x-tenant-id']
   const apiKey = req.headers['x-api-key']
 
   if (apiKey) {
     try {
-      const tenant = await Tenant.findOne({ where: { apiKey } })
+      const tenant = await getCachedTenant(`apiKey:${apiKey}`, () => 
+        Tenant.findOne({ where: { apiKey } })
+      )
       if (tenant) {
         req.tenant = tenant
         req.tenantId = tenant.id
@@ -20,7 +42,9 @@ async function tenantMiddleware(req, res, next) {
 
   if (tenantId) {
     try {
-      const tenant = await Tenant.findByPk(tenantId)
+      const tenant = await getCachedTenant(`id:${tenantId}`, () => 
+        Tenant.findByPk(tenantId)
+      )
       if (tenant) {
         req.tenant = tenant
         req.tenantId = tenant.id
@@ -38,7 +62,9 @@ async function tenantMiddleware(req, res, next) {
     try {
       const user = await User.findByPk(req.user.id)
       if (user?.tenantId) {
-        const tenant = await Tenant.findByPk(user.tenantId)
+        const tenant = await getCachedTenant(`id:${user.tenantId}`, () => 
+          Tenant.findByPk(user.tenantId)
+        )
         if (tenant) {
           req.tenant = tenant
           req.tenantId = tenant.id
@@ -145,4 +171,5 @@ module.exports = {
   requirePlanLimit,
   rateLimitByPlan,
   getTenantUsage,
+  clearTenantCache,
 }

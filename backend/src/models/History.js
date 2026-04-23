@@ -31,7 +31,17 @@ const History = sequelize.define('History', {
   }
 }, {
   tableName: 'history',
-  timestamps: false
+  timestamps: false,
+  indexes: [
+    {
+      name: 'idx_chain_timestamp',
+      fields: ['chainId', 'timestamp']
+    },
+    {
+      name: 'idx_chain_timestamp_desc',
+      fields: ['chainId', ['timestamp', 'DESC']]
+    }
+  ]
 })
 
 // Create table if not exists

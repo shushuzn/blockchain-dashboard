@@ -16,18 +16,42 @@ const CACHE_KEYS = {
   MEME: 'meme:'
 }
 
+const MEMORY_CACHE_TTL = 60000
+const memoryCache = new Map()
+
+function cleanupMemoryCache() {
+  const now = Date.now()
+  for (const [key, { data, expires }] of memoryCache.entries()) {
+    if (now > expires) {
+      memoryCache.delete(key)
+    }
+  }
+}
+
+setInterval(cleanupMemoryCache, MEMORY_CACHE_TTL)
+
 async function getCache(key) {
   try {
     const client = await getRedisClient()
-    if (!client) {
-      return null
+    
+    if (client) {
+      try {
+        const value = await client.get(key)
+        if (value) {
+          console.log(`[CACHE HIT] ${key} (Redis)`)
+          return JSON.parse(value)
+        }
+      } catch (redisError) {
+        console.warn(`[CACHE] Redis error, falling back to memory: ${redisError.message}`)
+      }
     }
-
-    const value = await client.get(key)
-    if (value) {
-      console.log(`[CACHE HIT] ${key}`)
-      return JSON.parse(value)
+    
+    const memCached = memoryCache.get(key)
+    if (memCached && Date.now() < memCached.expires) {
+      console.log(`[CACHE HIT] ${key} (Memory)`)
+      return memCached.data
     }
+    
     console.log(`[CACHE MISS] ${key}`)
     return null
   } catch (error) {
@@ -39,12 +63,21 @@ async function getCache(key) {
 async function setCache(key, value, ttlSeconds) {
   try {
     const client = await getRedisClient()
-    if (!client) {
-      return false
+    
+    if (client) {
+      try {
+        await client.setEx(key, ttlSeconds, JSON.stringify(value))
+        console.log(`[CACHE SET] ${key} (TTL: ${ttlSeconds}s) [Redis]`)
+      } catch (redisError) {
+        console.warn(`[CACHE] Redis set error: ${redisError.message}`)
+      }
     }
-
-    await client.setEx(key, ttlSeconds, JSON.stringify(value))
-    console.log(`[CACHE SET] ${key} (TTL: ${ttlSeconds}s)`)
+    
+    memoryCache.set(key, {
+      data: value,
+      expires: Date.now() + Math.min(ttlSeconds * 1000, MEMORY_CACHE_TTL)
+    })
+    console.log(`[CACHE SET] ${key} (TTL: ${ttlSeconds}s) [Memory]`)
     return true
   } catch (error) {
     console.error(`[CACHE ERROR] Set ${key}:`, error.message)
@@ -54,12 +87,13 @@ async function setCache(key, value, ttlSeconds) {
 
 async function deleteCache(key) {
   try {
+    memoryCache.delete(key)
+    
     const client = await getRedisClient()
-    if (!client) {
-      return false
+    if (client) {
+      await client.del(key)
     }
-
-    await client.del(key)
+    
     console.log(`[CACHE DELETE] ${key}`)
     return true
   } catch (error) {

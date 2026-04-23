@@ -1,4 +1,8 @@
 require('dotenv').config()
+
+const { validateEnvironment } = require('./src/config/envValidator')
+validateEnvironment()
+
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
@@ -8,6 +12,7 @@ const { notFoundHandler, globalErrorHandler, logError } = require('./src/utils/e
 const { middleware: metricsMiddleware, getMetrics } = require('./src/utils/metrics')
 const { i18nMiddleware } = require('./src/utils/i18n')
 const { createGraphQLServer, expressMiddleware: graphqlExpressMiddleware } = require('./src/graphql/server')
+const { apiLimiter, authLimiter, enhancedSecurityHeaders } = require('./src/middleware/security')
 
 const app = express()
 const PORT = process.env.PORT || 8000
@@ -50,6 +55,7 @@ const corsOptions = {
 
 app.use(helmet(helmetOptions))
 app.use(cors(corsOptions))
+app.use(enhancedSecurityHeaders)
 app.use(express.json({ limit: '10kb' }))
 app.use(metricsMiddleware)
 app.use(i18nMiddleware)
@@ -72,18 +78,18 @@ const authRoutes = require('./src/routes/auth')
 const rolesRoutes = require('./src/routes/roles')
 const analyticsRoutes = require('./src/routes/analytics')
 
-app.use('/api/history', historyRoutes)
-app.use('/api/config', configRoutes)
-app.use('/api/alerts', alertRoutes)
-app.use('/api/meme', memeRoutes)
-app.use('/api/lido', lidoRoutes)
-app.use('/api/aave', aaveRoutes)
-app.use('/api/webhook', webhookRoutes)
-app.use('/api/export', exportRoutes)
-app.use('/api/push', pushRoutes)
-app.use('/api/auth', authRoutes)
-app.use('/api/roles', rolesRoutes)
-app.use('/api/analytics', analyticsRoutes)
+app.use('/api/history', apiLimiter, historyRoutes)
+app.use('/api/config', apiLimiter, configRoutes)
+app.use('/api/alerts', apiLimiter, alertRoutes)
+app.use('/api/meme', apiLimiter, memeRoutes)
+app.use('/api/lido', apiLimiter, lidoRoutes)
+app.use('/api/aave', apiLimiter, aaveRoutes)
+app.use('/api/webhook', apiLimiter, webhookRoutes)
+app.use('/api/export', apiLimiter, exportRoutes)
+app.use('/api/push', apiLimiter, pushRoutes)
+app.use('/api/auth', authLimiter, authRoutes)
+app.use('/api/roles', apiLimiter, rolesRoutes)
+app.use('/api/analytics', apiLimiter, analyticsRoutes)
 
 async function initGraphQL() {
   try {

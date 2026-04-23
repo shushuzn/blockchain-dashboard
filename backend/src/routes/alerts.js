@@ -3,7 +3,29 @@ const router = express.Router()
 const axios = require('axios')
 const nodemailer = require('nodemailer')
 
-// Create email transporter
+const alertDeduplication = new Map()
+const DEDUP_WINDOW = 60000
+
+function isDuplicateAlert(chain, metric) {
+  const key = `${chain}:${metric}`
+  const lastAlert = alertDeduplication.get(key)
+  
+  if (lastAlert && Date.now() - lastAlert < DEDUP_WINDOW) {
+    return true
+  }
+  
+  alertDeduplication.set(key, Date.now())
+  
+  for (const [k] of alertDeduplication) {
+    const parts = k.split(':')
+    if (parts[0] === chain && Date.now() - alertDeduplication.get(k) > DEDUP_WINDOW * 2) {
+      alertDeduplication.delete(k)
+    }
+  }
+  
+  return false
+}
+
 function createTransporter(config) {
   return nodemailer.createTransporter({
     host: config.smtpHost,
@@ -19,13 +41,20 @@ function createTransporter(config) {
   })
 }
 
-// Trigger alert
 router.post('/', async (req, res) => {
   try {
-    const { chain, metric, value, threshold, config } = req.body
+    const { chain, metric, value, threshold, config, bypassDeduplication } = req.body
     
     if (!chain || !metric || !value || !threshold || !config) {
       return res.status(400).json({ error: 'Missing required parameters' })
+    }
+
+    if (!bypassDeduplication && isDuplicateAlert(chain, metric)) {
+      return res.status(429).json({ 
+        error: 'Duplicate alert suppressed',
+        message: `Alert for ${chain}:${metric} was sent recently. Please wait before sending again.`,
+        retryAfter: DEDUP_WINDOW / 1000
+      })
     }
 
     const results = {
@@ -33,7 +62,6 @@ router.post('/', async (req, res) => {
       email: false
     }
 
-    // Send Telegram alert
     if (config.telegramToken && config.telegramChatId) {
       try {
         const names = { gas: 'Priority Fee', baseFee: 'Base Fee', blobFee: 'Blob Fee' }
@@ -47,7 +75,8 @@ router.post('/', async (req, res) => {
             chat_id: config.telegramChatId,
             text: msg,
             parse_mode: 'HTML'
-          }
+          },
+          { timeout: 10000 }
         )
         results.telegram = true
       } catch (telegramError) {
@@ -55,7 +84,6 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Send email alert using Nodemailer
     if (config.smtpUser && config.smtpPass && config.smtpTo) {
       try {
         const transporter = createTransporter(config)

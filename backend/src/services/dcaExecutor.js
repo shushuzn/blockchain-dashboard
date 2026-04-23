@@ -2,9 +2,9 @@ const axios = require('axios')
 const { DCAOrder, calculateNextExecution } = require('../models/DCA')
 
 const DEX_AGGREGATORS = {
-  '1inch: 'https://api.1inch.dev/swap/v5.2',
+  '1inch': 'https://api.1inch.dev/swap/v5.2',
   paraswap: 'https://api.paraswap.io/v2',
-  0x: 'https://api.0x.org',
+  '0x': 'https://api.0x.org',
 }
 
 const DEFAULT_SLIPPAGE = 0.5
@@ -97,7 +97,7 @@ async function getCurrentGasPrice() {
     const Web3 = require('web3')
     const web3 = new Web3(process.env.ETHEREUM_RPC || 'https://eth.llamarpc.com')
     const gasPrice = await web3.eth.getGasPrice()
-    return parseFloat(web3.utils.fromWei(gasPrice, 'gwei')
+    return parseFloat(web3.utils.fromWei(gasPrice, 'gwei'))
   } catch {
     return 20
   }

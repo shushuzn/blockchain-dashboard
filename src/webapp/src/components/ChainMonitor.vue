@@ -193,6 +193,8 @@ const switchChain = (chainId) => {
   loadChainData()
 }
 
+let currentController = null
+
 const openAlertModal = () => {
   showAlertModal.value = true
 }
@@ -202,20 +204,34 @@ const refreshData = () => {
 }
 
 const loadChainData = async () => {
+  if (currentController) {
+    currentController.abort()
+  }
+  currentController = new AbortController()
+  
   loading.value = true
   try {
-    const data = await chainStore.fetchChainData(currentChain.value)
+    const data = await chainStore.fetchChainData(currentChain.value, { signal: currentController.signal })
     chainData.value = data
   } catch (e) {
-    console.error('Failed to load chain data:', e)
+    if (e.name !== 'AbortError') {
+      console.error('Failed to load chain data:', e)
+    }
   } finally {
     loading.value = false
+    currentController = null
   }
 }
 
 onMounted(() => {
   loadChainData()
   watch(activeChain, loadChainData)
+})
+
+onUnmounted(() => {
+  if (currentController) {
+    currentController.abort()
+  }
 })
 </script>
 

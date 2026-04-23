@@ -5,6 +5,53 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 const MAX_RETRIES = 3
 const INITIAL_DELAY = 1000
 
+export class ApiError extends Error {
+  constructor(message, code, status, url, timestamp, details = null) {
+    super(message)
+    this.name = 'ApiError'
+    this.code = code
+    this.status = status
+    this.url = url
+    this.timestamp = timestamp
+    this.details = details
+  }
+
+  static fromResponse(response) {
+    return new ApiError(
+      response.message || 'Unknown error',
+      response.code || 'UNKNOWN',
+      response.status || 0,
+      response.url || '',
+      response.timestamp || new Date().toISOString(),
+      response.details
+    )
+  }
+
+  isUnauthorized() {
+    return this.status === 401
+  }
+
+  isForbidden() {
+    return this.status === 403
+  }
+
+  isNotFound() {
+    return this.status === 404
+  }
+
+  isRateLimited() {
+    return this.status === 429
+  }
+
+  isServerError() {
+    return this.status >= 500
+  }
+
+  isNetworkError() {
+    return this.status === 0 && !this.isServerError()
+  }
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -62,23 +109,28 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest)
     }
     
-    const errorResponse = {
+    const apiError = ApiError.fromResponse({
       message: error.response?.data?.message || error.message || 'Network error',
       code: error.response?.data?.code || error.code || 'UNKNOWN_ERROR',
       status: error.response?.status || 0,
       url: originalRequest?.url || 'unknown',
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+      details: error.response?.data
+    })
     
-    console.error('[API Error]', errorResponse)
+    console.error('[API Error]', apiError)
     
-    return Promise.reject(errorResponse)
+    return Promise.reject(apiError)
   }
 )
 
 export const historyApi = {
-  async getHistory(chainId, days = 7) {
-    return apiClient.get('/history', { params: { chainId, days } })
+  async getHistory(chainId, days = 7, options = {}) {
+    const { limit, offset } = options
+    const params = { chainId, days }
+    if (limit) params.limit = limit
+    if (offset) params.offset = offset
+    return apiClient.get('/history', { params })
   },
   
   async addHistoryPoint(chainId, timestamp, gas, baseFee, blobFee, util) {
@@ -93,6 +145,10 @@ export const historyApi = {
 export const configApi = {
   async getConfig(userId = 'default') {
     return apiClient.get('/config', { params: { userId } })
+  },
+  
+  async getSensitiveConfig(userId = 'default') {
+    return apiClient.get('/config/sensitive', { params: { userId } })
   },
   
   async saveConfig(configData, userId = 'default') {
