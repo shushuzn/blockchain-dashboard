@@ -8,19 +8,31 @@ const getDatabaseConfig = () => {
   const baseConfig = {
     logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
+      max: parseInt(process.env.DB_POOL_MAX) || 5,
+      min: parseInt(process.env.DB_POOL_MIN) || 0,
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 30000,
+      idle: parseInt(process.env.DB_POOL_IDLE) || 10000
     },
     retry: {
-      max: 3
+      max: parseInt(process.env.DB_RETRY_MAX) || 3,
+      match: [/ TransientConditionError/],
+      backoffBase: 100,
+      backoffExponent: 1.5
     },
     define: {
       timestamps: false,
       underscored: true,
       freezeTableName: true
-    }
+    },
+    operatorsAliases: false,
+    query: {
+      raw: false,
+      nest: false,
+      type: 'SELECT'
+    },
+    transactionType: 'IMMEDIATE',
+    isolationLevel: 'READ COMMITTED',
+    replication: false
   }
 
   if (dialect === 'postgres') {
@@ -34,14 +46,23 @@ const getDatabaseConfig = () => {
       password: process.env.DB_PASSWORD,
       ssl: process.env.DB_SSL === 'true' ? {
         rejectUnauthorized: false
-      } : false
+      } : false,
+      dialectOptions: {
+        decimalNumbers: true,
+        supportBigNumbers: true,
+        bigNumberStrings: true
+      }
     }
   }
 
   return {
     ...baseConfig,
     dialect: 'sqlite',
-    storage: process.env.DB_PATH || './database.db'
+    storage: process.env.DB_PATH || './database.db',
+    dialectOptions: {
+      busyTimeout: 5000,
+      statementTimeout: 30000
+    }
   }
 }
 

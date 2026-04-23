@@ -1,5 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
 describe('Cache Manager', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -17,7 +15,7 @@ describe('Cache Manager', () => {
     const item = localStorage.getItem('mcm_cache_test')
     expect(item).toBeTruthy()
     
-    const parsed = JSON.parse(item!)
+    const parsed = JSON.parse(item)
     expect(parsed.data).toEqual(testData)
   })
 
@@ -33,7 +31,7 @@ describe('Cache Manager', () => {
     }))
     
     const item = localStorage.getItem('mcm_cache_test')
-    const parsed = JSON.parse(item!)
+    const parsed = JSON.parse(item)
     const isExpired = Date.now() - parsed.timestamp > parsed.ttl
     
     expect(isExpired).toBe(true)
@@ -86,7 +84,7 @@ describe('API Rate Limiting', () => {
   it('should limit requests per window', () => {
     const maxRequests = 100
     const windowMs = 60000
-    const requests: number[] = []
+    const requests = []
     
     const now = Date.now()
     for (let i = 0; i < 99; i++) {
@@ -163,7 +161,7 @@ describe('Web Vitals', () => {
       CLS: { good: 0.1, poor: 0.25 }
     }
     
-    const rating = (value: number, good: number, poor: number) => {
+    const rating = (value, good, poor) => {
       if (value <= good) return 'good'
       if (value <= poor) return 'needs-improvement'
       return 'poor'
@@ -181,7 +179,7 @@ describe('Web Vitals', () => {
       { rating: 'poor', weight: 1 }
     ]
     
-    const ratingScore = (rating: string) => {
+    const ratingScore = (rating) => {
       if (rating === 'good') return 100
       if (rating === 'needs-improvement') return 50
       return 0
@@ -203,8 +201,7 @@ describe('Theme System', () => {
   })
 
   it('should get system theme', () => {
-    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
-    
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
     const systemTheme = prefersDark ? 'dark' : 'light'
     
     expect(['dark', 'light'].includes(systemTheme)).toBe(true)
