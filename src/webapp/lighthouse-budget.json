@@ -1,0 +1,98 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:4000/"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop"
+      }
+    },
+    "assert": {
+      "performance": [
+        {
+          "metric": "performance",
+          "operator": "greaterThan",
+          "value": 0.8
+        },
+        {
+          "metric": "first-contentful-paint",
+          "operator": "lessThan",
+          "value": 2000
+        },
+        {
+          "metric": "largest-contentful-paint",
+          "operator": "lessThan",
+          "value": 4000
+        },
+        {
+          "metric": "cumulative-layout-shift",
+          "operator": "lessThan",
+          "value": 0.1
+        },
+        {
+          "metric": "total-blocking-time",
+          "operator": "lessThan",
+          "value": 500
+        }
+      ],
+      "accessibility": [
+        {
+          "metric": "categories.accessibility",
+          "operator": "greaterThan",
+          "value": 0.9
+        }
+      ],
+      "best-practices": [
+        {
+          "metric": "categories.best-practices",
+          "operator": "greaterThan",
+          "value": 0.85
+        }
+      ],
+      "seo": [
+        {
+          "metric": "categories.seo",
+          "operator": "greaterThan",
+          "value": 0.9
+        }
+      ],
+      "pwa": [
+        {
+          "metric": "categories.pwa",
+          "operator": "greaterThan",
+          "value": 0.7
+        }
+      ],
+      "budgets": [
+        {
+          "resourceSizes": [
+            {
+              "resourceType": "total",
+              "budget": 350
+            },
+            {
+              "resourceType": "script",
+              "budget": 150
+            },
+            {
+              "resourceType": "image",
+              "budget": 100
+            },
+            {
+              "resourceType": "css",
+              "budget": 50
+            }
+          ],
+          "resourceCounts": [
+            {
+              "resourceType": "third-party",
+              "budget": 10
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
