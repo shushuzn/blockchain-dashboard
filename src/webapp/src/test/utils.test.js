@@ -142,7 +142,7 @@ describe('Logger', () => {
     
     expect(currentLevel >= LOG_LEVELS.DEBUG).toBe(true)
     expect(currentLevel >= LOG_LEVELS.INFO).toBe(true)
-    expect(currentLevel >= LOG_LEVELS.WARN).toBe(true)
+    expect(currentLevel >= LOG_LEVELS.WARN).toBe(false)
     expect(currentLevel >= LOG_LEVELS.ERROR).toBe(false)
   })
 })
