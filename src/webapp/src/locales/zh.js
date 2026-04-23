@@ -8,7 +8,7 @@ export default {
     charts: '图表',
     dashboard: '仪表盘',
     lido: 'Lido',
-    aave: 'Aave'
+    aave: 'Aave',
   },
   chains: {
     ethereum: '以太坊',
@@ -19,7 +19,7 @@ export default {
     bsc: 'BSC',
     polygon: 'Polygon',
     zksync: 'zkSync Era',
-    starknet: 'Starknet'
+    starknet: 'Starknet',
   },
   metrics: {
     ethPrice: 'ETH 价格',
@@ -33,7 +33,7 @@ export default {
     gasUtil: 'Gas 利用率',
     ethSupply: 'ETH 供应量',
     ethMarketCap: 'ETH 市值',
-    mevReward: 'MEV 奖励'
+    mevReward: 'MEV 奖励',
   },
   settings: {
     title: '设置',
@@ -55,7 +55,7 @@ export default {
     about: '关于',
     version: '版本',
     cancel: '取消',
-    save: '保存'
+    save: '保存',
   },
   alerts: {
     title: '警报',
@@ -65,7 +65,7 @@ export default {
     threshold: '阈值',
     cooldown: '冷却时间（分钟）',
     saveSuccess: '设置已保存',
-    saveFailed: '保存设置失败'
+    saveFailed: '保存设置失败',
   },
   lido: {
     title: 'Lido 质押',
@@ -77,7 +77,7 @@ export default {
     marketCap: '市值',
     history7d: '7天历史',
     loading: '正在加载 Lido 数据...',
-    error: '加载 Lido 数据失败'
+    error: '加载 Lido 数据失败',
   },
   aave: {
     title: 'Aave 借贷',
@@ -85,11 +85,11 @@ export default {
     totalBorrowed: '总借款',
     utilization: '利用率',
     loading: '正在加载 Aave 数据...',
-    error: '加载 Aave 数据失败'
+    error: '加载 Aave 数据失败',
   },
   errors: {
     networkError: '网络错误，请检查网络连接。',
     serverError: '服务器错误，请稍后重试。',
-    unknownError: '发生未知错误。'
-  }
-}
+    unknownError: '发生未知错误。',
+  },
+};

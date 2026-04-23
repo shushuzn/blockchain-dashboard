@@ -1,7 +1,7 @@
-import { getLogger } from '../utils/logger'
+import { getLogger } from '../utils/logger';
 
-const logger = getLogger('graphql')
-const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_URL || '/graphql'
+const logger = getLogger('graphql');
+const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_URL || '/graphql';
 
 export async function graphqlQuery(query, variables = {}) {
   try {
@@ -9,19 +9,19 @@ export async function graphqlQuery(query, variables = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, variables }),
-    })
+    });
 
-    const result = await response.json()
+    const result = await response.json();
 
     if (result.errors) {
-      logger.error('GraphQL errors:', { errors: result.errors })
-      throw new Error(result.errors[0].message)
+      logger.error('GraphQL errors:', { errors: result.errors });
+      throw new Error(result.errors[0].message);
     }
 
-    return result.data
+    return result.data;
   } catch (error) {
-    logger.error('GraphQL request failed:', { error })
-    throw error
+    logger.error('GraphQL request failed:', { error });
+    throw error;
   }
 }
 
@@ -51,7 +51,7 @@ export const CHAINS_QUERY = `
       }
     }
   }
-`
+`;
 
 export const CHAIN_QUERY = `
   query Chain($id: String!) {
@@ -79,7 +79,7 @@ export const CHAIN_QUERY = `
       }
     }
   }
-`
+`;
 
 export const PRICES_QUERY = `
   query Prices {
@@ -94,7 +94,7 @@ export const PRICES_QUERY = `
       }
     }
   }
-`
+`;
 
 export const MEME_COINS_QUERY = `
   query MemeCoins {
@@ -106,7 +106,7 @@ export const MEME_COINS_QUERY = `
       percent_change_24h
     }
   }
-`
+`;
 
 export const LIDO_TVL_QUERY = `
   query LidoTVL {
@@ -117,7 +117,7 @@ export const LIDO_TVL_QUERY = `
       apy
     }
   }
-`
+`;
 
 export const AAVE_TVL_QUERY = `
   query AaveTVL {
@@ -133,7 +133,7 @@ export const AAVE_TVL_QUERY = `
       }
     }
   }
-`
+`;
 
 export const CONFIG_QUERY = `
   query Config {
@@ -163,7 +163,7 @@ export const CONFIG_QUERY = `
       }
     }
   }
-`
+`;
 
 export const ALERTS_QUERY = `
   query Alerts($limit: Int) {
@@ -176,7 +176,7 @@ export const ALERTS_QUERY = `
       threshold
     }
   }
-`
+`;
 
 export default {
   graphqlQuery,
@@ -188,4 +188,4 @@ export default {
   AAVE_TVL_QUERY,
   CONFIG_QUERY,
   ALERTS_QUERY,
-}
+};

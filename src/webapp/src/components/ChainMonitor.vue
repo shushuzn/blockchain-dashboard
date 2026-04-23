@@ -16,8 +16,8 @@
         <button class="btn btn-alert" @click="openAlertModal">
           🔔 Alerts
         </button>
-        <button class="btn" @click="refreshData">
-          🔄
+        <button class="btn" @click="refreshData" :disabled="loading">
+          <span :class="{ 'spin': loading }">🔄</span>
         </button>
       </div>
     </div>
@@ -61,29 +61,29 @@
           <div class="card-value cyan">{{ chainData.blockFmt }}</div>
           <div class="card-sub">{{ chainData.blockSub }}</div>
         </div>
-        <div class="card" :style="{ borderColor: chainData.gas > threshold.gas ? '#ef4444' : '' }">
+        <div class="card" :style="getCardStyle('gas', chainData.gas)">
           <div class="card-label">Priority Fee</div>
           <div :class="['card-value', getGasColor(chainData.gas)]">{{ chainData.gasFmt }}</div>
           <div class="card-sub">gwei · low</div>
         </div>
-        <div class="card" :style="{ borderColor: chainData.baseFee > threshold.baseFee ? '#ef4444' : '' }">
+        <div class="card" :style="getCardStyle('baseFee', chainData.baseFee)">
           <div class="card-label">Base Fee</div>
           <div :class="['card-value', getBaseFeeColor(chainData.baseFee)]">{{ chainData.baseFeeFmt }}</div>
           <div class="card-sub">gwei</div>
         </div>
-        <div v-if="currentChain.hasBlob && chainData.blobFee !== null" class="card" :style="{ borderColor: chainData.blobFee > threshold.blobFee ? '#ef4444' : '' }">
+        <div v-if="currentChain.hasBlob && chainData.blobFee !== null" class="card" :style="getCardStyle('blobFee', chainData.blobFee)">
           <div class="card-label">Blob Fee</div>
           <div class="card-value purple">{{ chainData.blobFeeFmt }}</div>
           <div class="card-sub">gwei · EIP-4844</div>
         </div>
         <div class="card">
           <div class="card-label">Gas Util</div>
-          <div :class="['card-value', getUtilColor(chainData.utilPct)]">{{ chainData.utilPctFmt }}%</div>
+          <div :class="['card-value', utilColor]">{{ chainData.utilPctFmt }}%</div>
           <div class="progress-bar">
             <div class="progress-fill" :style="{ 
               width: Math.min(100, chainData.utilPct) + '%',
-              background: getUtilColor(chainData.utilPct) === 'red' ? '#ef4444' : 
-                         getUtilColor(chainData.utilPct) === 'yellow' ? '#f59e0b' : '#10b981'
+              background: utilColor === 'red' ? '#ef4444' : 
+                         utilColor === 'yellow' ? '#f59e0b' : '#10b981'
             }"></div>
           </div>
         </div>
@@ -103,6 +103,11 @@
           <div class="card-sub">{{ chainData.mevData.mevShare }}% of block</div>
         </div>
       </div>
+    </div>
+
+    <div v-else-if="!loading && !chainData" class="error-container">
+      <div class="error-message">Failed to load chain data</div>
+      <button class="btn" @click="refreshData">Retry</button>
     </div>
 
     <div class="alert-log" v-if="alertLog.length > 0">
@@ -134,24 +139,26 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useChainStore } from '../stores/chain'
 import { useConfigStore } from '../stores/config'
 import AlertModal from './AlertModal.vue'
 import { getLogger } from '../utils/logger'
+import type { Chain, ChainData } from '../types/chain'
+import type { ChainStore } from '../types/store'
 
 const logger = getLogger('ChainMonitor')
 
-const chainStore = useChainStore()
+const chainStore = useChainStore() as unknown as ChainStore
 const configStore = useConfigStore()
 
-const activeChain = ref('ethereum')
-const loading = ref(false)
-const chainData = ref(null)
-const showAlertModal = ref(false)
+const activeChain = ref<string>('ethereum')
+const loading = ref<boolean>(false)
+const chainData = ref<ChainData | null>(null)
+const showAlertModal = ref<boolean>(false)
 
-const chains = computed(() => chainStore.chains)
+const chains = computed<Chain[]>(() => chainStore.chains as Chain[])
 const ethPrice = computed(() => chainStore.ethPrice)
 const ethChange = computed(() => chainStore.ethChange)
 const ethChangeText = computed(() => (ethChange.value >= 0 ? '+' : '') + ethChange.value.toFixed(2) + '%')
@@ -159,44 +166,56 @@ const btcPrice = computed(() => chainStore.btcPrice)
 const lastUpdated = computed(() => chainStore.lastUpdated)
 const alertLog = computed(() => configStore.alertLog)
 
-const currentChain = computed(() => {
-  return chains.value.find(c => c.id === activeChain.value) || chains.value[0]
+const currentChain = computed<Chain>(() => {
+  return chains.value.find((c: Chain) => c.id === activeChain.value) || chains.value[0]
 })
 
 const threshold = computed(() => {
-  return configStore.thresholds[activeChain.value] || { gas: 50, baseFee: 50, blobFee: 0.1 }
+  return configStore.thresholds[activeChain.value as keyof typeof configStore.thresholds] || { gas: 50, baseFee: 50, blobFee: 0.1 }
 })
 
-const getGasColor = (gas) => {
+const utilColor = computed(() => {
+  const util = chainData.value?.utilPct || 0
+  if (util > 80) return 'red'
+  if (util > 50) return 'yellow'
+  return 'green'
+})
+
+const getGasColor = (gas: number): string => {
   if (gas > threshold.value.gas) return 'red'
   if (gas > 20) return 'yellow'
   return 'green'
 }
 
-const getBaseFeeColor = (baseFee) => {
+const getBaseFeeColor = (baseFee: number): string => {
   if (baseFee > threshold.value.baseFee) return 'red'
   if (baseFee > 20) return 'yellow'
   return 'green'
 }
 
-const getUtilColor = (util) => {
-  if (util > 80) return 'red'
-  if (util > 50) return 'yellow'
-  return 'green'
+const getCardStyle = (metric: 'gas' | 'baseFee' | 'blobFee', value: number) => {
+  const t = threshold.value[metric]
+  if (t && value > t) {
+    return { borderColor: '#ef4444' }
+  }
+  return {}
 }
 
-const formatMEV = (mevReward) => {
+const formatMEV = (mevReward: number): string => {
   const eth = mevReward / 1e18
   if (eth >= 1) return eth.toFixed(2) + ' ETH'
   return (eth * 1000).toFixed(2) + ' mETH'
 }
 
-const switchChain = (chainId) => {
+const switchChain = (chainId: string) => {
   activeChain.value = chainId
-  loadChainData()
 }
 
-let currentController = null
+watch(activeChain, () => {
+  loadChainData()
+})
+
+let currentController: AbortController | null = null
 
 const openAlertModal = () => {
   showAlertModal.value = true
@@ -214,11 +233,12 @@ const loadChainData = async () => {
   
   loading.value = true
   try {
-    const data = await chainStore.fetchChainData(currentChain.value, { signal: currentController.signal })
-    chainData.value = data
-  } catch (e) {
-    if (e.name !== 'AbortError') {
-      logger.error('Failed to load chain data:', { error: e })
+    const data = await chainStore.fetchChainData(currentChain.value)
+    chainData.value = data as ChainData
+  } catch (e: unknown) {
+    const error = e as Error
+    if (error.name !== 'AbortError') {
+      logger.error('Failed to load chain data:', { error })
     }
   } finally {
     loading.value = false
@@ -228,7 +248,6 @@ const loadChainData = async () => {
 
 onMounted(() => {
   loadChainData()
-  watch(activeChain, loadChainData)
 })
 
 onUnmounted(() => {
@@ -269,9 +288,14 @@ onUnmounted(() => {
   transition: all 0.15s;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   border-color: #374151;
   color: #e2e8f0;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-alert {
@@ -281,6 +305,16 @@ onUnmounted(() => {
 
 .btn-alert:hover {
   background: #1f0a0a;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
 }
 
 .eth-banner {
@@ -315,6 +349,22 @@ onUnmounted(() => {
 .eth-banner .updated {
   font-size: 0.75rem;
   color: #6b7280;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
+  background: var(--bg-secondary);
+  border-radius: 9px;
+  margin-bottom: 14px;
+}
+
+.error-message {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .chain-meta {

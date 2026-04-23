@@ -1,6 +1,6 @@
-import { config } from '@vue/test-utils'
+import { config } from '@vue/test-utils';
 
-global.config = config
+global.config = config;
 
 vi.mock('axios', () => {
   const mockAxios = {
@@ -11,10 +11,10 @@ vi.mock('axios', () => {
       delete: vi.fn(),
       interceptors: {
         request: { use: vi.fn(), eject: vi.fn() },
-        response: { use: vi.fn(), eject: vi.fn() }
+        response: { use: vi.fn(), eject: vi.fn() },
       },
-      defaults: {}
-    })
-  }
-  return { default: mockAxios, ...mockAxios }
-})
+      defaults: {},
+    }),
+  };
+  return { default: mockAxios, ...mockAxios };
+});

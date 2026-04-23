@@ -8,7 +8,7 @@ export default {
     charts: 'Charts',
     dashboard: 'Dashboard',
     lido: 'Lido',
-    aave: 'Aave'
+    aave: 'Aave',
   },
   chains: {
     ethereum: 'Ethereum',
@@ -19,7 +19,7 @@ export default {
     bsc: 'BSC',
     polygon: 'Polygon',
     zksync: 'zkSync Era',
-    starknet: 'Starknet'
+    starknet: 'Starknet',
   },
   metrics: {
     ethPrice: 'ETH Price',
@@ -33,7 +33,7 @@ export default {
     gasUtil: 'Gas Util',
     ethSupply: 'ETH Supply',
     ethMarketCap: 'ETH Market Cap',
-    mevReward: 'MEV Reward'
+    mevReward: 'MEV Reward',
   },
   settings: {
     title: 'Settings',
@@ -55,7 +55,7 @@ export default {
     about: 'About',
     version: 'Version',
     cancel: 'Cancel',
-    save: 'Save'
+    save: 'Save',
   },
   alerts: {
     title: 'Alerts',
@@ -65,7 +65,7 @@ export default {
     threshold: 'Threshold',
     cooldown: 'Cooldown (minutes)',
     saveSuccess: 'Settings saved',
-    saveFailed: 'Failed to save settings'
+    saveFailed: 'Failed to save settings',
   },
   lido: {
     title: 'Lido Staking',
@@ -77,7 +77,7 @@ export default {
     marketCap: 'Market Cap',
     history7d: '7-Day History',
     loading: 'Loading Lido data...',
-    error: 'Failed to load Lido data'
+    error: 'Failed to load Lido data',
   },
   aave: {
     title: 'Aave Lending',
@@ -85,11 +85,11 @@ export default {
     totalBorrowed: 'Total Borrowed',
     utilization: 'Utilization',
     loading: 'Loading Aave data...',
-    error: 'Failed to load Aave data'
+    error: 'Failed to load Aave data',
   },
   errors: {
     networkError: 'Network error. Please check your connection.',
     serverError: 'Server error. Please try again later.',
-    unknownError: 'An unexpected error occurred.'
-  }
-}
+    unknownError: 'An unexpected error occurred.',
+  },
+};
