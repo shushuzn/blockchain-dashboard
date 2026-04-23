@@ -1,156 +1,86 @@
 <template>
   <Teleport to="body">
-    <div class="toast-container">
-      <TransitionGroup name="toast">
-        <div
-          v-for="toast in toasts"
-          :key="toast.id"
-          :class="['toast', `toast-${toast.type}`]"
-        >
-          <span class="toast-icon">{{ getIcon(toast.type) }}</span>
-          <span class="toast-message">{{ toast.message }}</span>
-          <button @click="removeToast(toast.id)" class="toast-close">×</button>
+    <Transition name="toast">
+      <div v-if="visible" :class="['toast', type]" role="alert">
+        <div class="toast-icon">
+          <span v-if="type === 'success'">✓</span>
+          <span v-else-if="type === 'error'">✕</span>
+          <span v-else-if="type === 'warning'">⚠</span>
+          <span v-else>ℹ</span>
         </div>
-      </TransitionGroup>
-    </div>
+        <div class="toast-content">
+          <strong v-if="title">{{ title }}</strong>
+          <p>{{ message }}</p>
+        </div>
+        <button class="toast-close" @click="close">×</button>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 
-const toasts = ref([])
-let toastId = 0
+const visible = ref(false)
+const message = ref('')
+const type = ref('info')
+const title = ref('')
+let timeout = null
 
-function addToast(message, type = 'error', duration = 5000) {
-  const id = ++toastId
-  toasts.value.push({ id, message, type })
-  
+function show(msg, toastType = 'info', toastTitle = '', duration = 3000) {
+  message.value = msg
+  type.value = toastType
+  title.value = toastTitle
+  visible.value = true
+  if (timeout) clearTimeout(timeout)
   if (duration > 0) {
-    setTimeout(() => removeToast(id), duration)
-  }
-  
-  return id
-}
-
-function removeToast(id) {
-  const index = toasts.value.findIndex(t => t.id === id)
-  if (index > -1) {
-    toasts.value.splice(index, 1)
+    timeout = setTimeout(close, duration)
   }
 }
 
-function getIcon(type) {
-  const icons = {
-    error: '❌',
-    warning: '⚠️',
-    success: '✅',
-    info: 'ℹ️'
+function close() {
+  visible.value = false
+  if (timeout) {
+    clearTimeout(timeout)
+    timeout = null
   }
-  return icons[type] || icons.info
 }
 
-function error(message, duration) {
-  return addToast(message, 'error', duration)
-}
-
-function warning(message, duration) {
-  return addToast(message, 'warning', duration)
-}
-
-function success(message, duration) {
-  return addToast(message, 'success', duration)
-}
-
-function info(message, duration) {
-  return addToast(message, 'info', duration)
-}
-
-defineExpose({ addToast, removeToast, error, warning, success, info })
+defineExpose({ show, close })
 </script>
 
 <style scoped>
-.toast-container {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-width: 400px;
-}
-
 .toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: #1f2937;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--card-bg, #fff);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border-left: 4px solid;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  max-width: 360px;
 }
-
-.toast-error {
-  border-left-color: #ef4444;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), #1f2937);
-}
-
-.toast-warning {
-  border-left-color: #f59e0b;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), #1f2937);
-}
-
-.toast-success {
-  border-left-color: #10b981;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), #1f2937);
-}
-
-.toast-info {
-  border-left-color: #3b82f6;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), #1f2937);
-}
-
-.toast-icon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.toast-message {
-  flex: 1;
-  font-size: 0.875rem;
-  color: #f9fafb;
-  word-break: break-word;
-}
-
+.toast.success { border-left: 4px solid #10b981; }
+.toast.error { border-left: 4px solid #ef4444; }
+.toast.warning { border-left: 4px solid #f59e0b; }
+.toast.info { border-left: 4px solid #3b82f6; }
+.toast-icon { font-size: 20px; }
+.toast-content { flex: 1; }
+.toast-content strong { display: block; margin-bottom: 4px; }
+.toast-content p { margin: 0; font-size: 14px; }
 .toast-close {
   background: none;
   border: none;
-  color: #9ca3af;
-  font-size: 1.25rem;
+  font-size: 20px;
   cursor: pointer;
-  padding: 0 0.25rem;
-  line-height: 1;
-  transition: color 0.15s;
+  opacity: 0.5;
 }
-
-.toast-close:hover {
-  color: #f9fafb;
-}
-
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-
-.toast-enter-from {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.toast-leave-to {
-  opacity: 0;
-  transform: translateX(100%);
-}
+.toast-close:hover { opacity: 1; }
+.toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+.toast-enter-from { opacity: 0; transform: translateX(100%); }
+.toast-leave-to { opacity: 0; transform: translateX(100%); }
 </style>
