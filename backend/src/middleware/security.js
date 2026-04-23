@@ -78,12 +78,19 @@ function enhancedSecurityHeaders(req, res, next) {
     'X-Download-Options': 'noopen',
     'X-Permitted-Cross-Domain-Policies': 'none',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
     'Content-Security-Policy': buildCSP(),
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
     'Pragma': 'no-cache',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Resource-Policy': 'same-site',
   })
+  
+  res.removeHeader('X-Powered-By')
+  res.removeHeader('Server')
+  
   next()
 }
 

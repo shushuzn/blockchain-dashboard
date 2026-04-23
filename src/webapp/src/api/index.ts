@@ -7,6 +7,20 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 const MAX_RETRIES = 3
 const INITIAL_DELAY = 1000
+const RATE_LIMIT_WINDOW = 60000
+const MAX_REQUESTS_PER_WINDOW = 100
+
+interface RateLimitState {
+  requests: number[]
+  lastReset: number
+}
+
+const rateLimitState: RateLimitState = {
+  requests: [],
+  lastReset: Date.now()
+}
+
+const pendingRequests = new Map<string, Promise<unknown>>()
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -16,8 +30,33 @@ function calculateDelay(attempt: number): number {
   return INITIAL_DELAY * Math.pow(2, attempt)
 }
 
+function checkRateLimit(): boolean {
+  const now = Date.now()
+  
+  if (now - rateLimitState.lastReset > RATE_LIMIT_WINDOW) {
+    rateLimitState.requests = []
+    rateLimitState.lastReset = now
+  }
+  
+  if (rateLimitState.requests.length >= MAX_REQUESTS_PER_WINDOW) {
+    logger.warn('[API] Rate limit reached', {
+      requests: rateLimitState.requests.length,
+      limit: MAX_REQUESTS_PER_WINDOW
+    })
+    return false
+  }
+  
+  rateLimitState.requests.push(now)
+  return true
+}
+
+function generateRequestKey(config: { method?: string; url?: string; params?: unknown; data?: unknown }): string {
+  return `${config.method || 'GET'}:${config.url}:${JSON.stringify(config.params)}:${JSON.stringify(config.data)}`
+}
+
 interface RetryableConfig {
   __retryCount?: number
+  __customResolve?: (value: unknown) => void
   url?: string
   headers?: Record<string, string>
   baseURL?: string
@@ -66,16 +105,52 @@ const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   config => {
+    if (!checkRateLimit()) {
+      return Promise.reject(new Error('Rate limit exceeded'))
+    }
+    
     config.headers['X-Request-ID'] = crypto.randomUUID()
+    
+    const requestKey = generateRequestKey(config)
+    const existingRequest = pendingRequests.get(requestKey)
+    
+    if (existingRequest && config.method === 'GET') {
+      logger.info('[API] Deduplicating request', { url: config.url })
+      return Promise.reject({ __deduplicated: true, originalPromise: existingRequest })
+    }
+    
+    pendingRequests.set(requestKey, new Promise(resolve => {
+      ;(config as unknown as { __customResolve?: (value: unknown) => void }).__customResolve = resolve
+    }))
+    
     return config
   },
   error => Promise.reject(error)
 )
 
 apiClient.interceptors.response.use(
-  response => response.data,
+  response => {
+    const requestKey = generateRequestKey(response.config)
+    pendingRequests.delete(requestKey)
+    
+    const customResolve = (response.config as unknown as { __customResolve?: (value: unknown) => void }).__customResolve
+    if (customResolve) {
+      customResolve(response.data)
+    }
+    
+    return response.data
+  },
   async (error: RetryableError) => {
+    if ((error as { __deduplicated?: boolean }).__deduplicated) {
+      return (error as { originalPromise: Promise<unknown> }).originalPromise
+    }
+    
     const originalRequest = error.config
+    
+    if (originalRequest) {
+      const requestKey = generateRequestKey(originalRequest)
+      pendingRequests.delete(requestKey)
+    }
     
     if (shouldRetry(error) && originalRequest) {
       originalRequest.__retryCount = (originalRequest.__retryCount ?? 0) + 1
@@ -105,6 +180,13 @@ apiClient.interceptors.response.use(
     return Promise.reject(errorResponse)
   }
 )
+
+export const getRateLimitStatus = () => ({
+  used: rateLimitState.requests.length,
+  limit: MAX_REQUESTS_PER_WINDOW,
+  remaining: MAX_REQUESTS_PER_WINDOW - rateLimitState.requests.length,
+  windowReset: rateLimitState.lastReset + RATE_LIMIT_WINDOW
+})
 
 export const historyApi = {
   async getHistory(chainId: string, days = 7): Promise<HistoryResponse> {

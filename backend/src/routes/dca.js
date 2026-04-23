@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { DCAOrder, getOrderHistory, calculateNextExecution } = require('../models/DCA')
+const { DCAOrder, getOrderHistory, calculateNextExecution, executeOrder } = require('../models/DCA')
 const { executeDCA, simulateDCA, getCurrentGasPrice } = require('../services/dcaExecutor')
 const { logger } = require('../utils/logger')
 

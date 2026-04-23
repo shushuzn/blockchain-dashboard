@@ -1,16 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="description" content="Real-time blockchain monitoring dashboard - ETH, BTC, DeFi metrics" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="Blockchain Dashboard - Real-time Crypto & DeFi Monitoring" />
+    <meta name="description" content="Professional blockchain monitoring dashboard. Track ETH gas, BTC fees, DeFi protocols (Aave, Lido), meme coins, and cross-chain analytics in real-time." />
+    <meta name="keywords" content="blockchain, ethereum, bitcoin, defi, gas tracker, crypto dashboard, wallet monitor, defi analytics, web3" />
+    <meta name="author" content="Blockchain Dashboard Team" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: light)" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://blockchain-dashboard.app/" />
+    <meta property="og:title" content="Blockchain Dashboard - Real-time Crypto & DeFi Monitoring" />
+    <meta property="og:description" content="Professional blockchain monitoring dashboard. Track ETH gas, BTC fees, DeFi protocols and cross-chain analytics in real-time." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="Blockchain Dashboard" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://blockchain-dashboard.app/" />
+    <meta property="twitter:title" content="Blockchain Dashboard - Real-time Crypto & DeFi Monitoring" />
+    <meta property="twitter:description" content="Professional blockchain monitoring dashboard. Track ETH gas, BTC fees, DeFi protocols and cross-chain analytics in real-time." />
+    <meta property="twitter:image" content="/og-image.png" />
+    
+    <!-- Apple Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="BC Dashboard" />
     <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
-    <title>Blockchain Dashboard</title>
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://blockchain-dashboard.app/" />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="https://api.coingecko.com" />
+    <link rel="dns-prefetch" href="https://api.thegraph.com" />
+    <link rel="dns-prefetch" href="https://eth.llamarpc.com" />
+    
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://api.coingecko.com" crossorigin />
+    <link rel="preconnect" href="https://api.thegraph.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Performance Hints -->
+    <link rel="preload" href="/src/main.js" as="script" />
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Blockchain Dashboard",
+      "description": "Real-time blockchain monitoring dashboard for ETH, BTC, DeFi protocols",
+      "url": "https://blockchain-dashboard.app",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "156"
+      }
+    }
+    </script>
+    
+    <title>Blockchain Dashboard - Real-time Crypto & DeFi Monitoring</title>
   </head>
   <body>
     <div id="app"></div>

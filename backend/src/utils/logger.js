@@ -7,6 +7,14 @@ const LOG_LEVELS = {
   DEBUG: 3
 }
 
+const LOG_CATEGORIES = {
+  AUDIT: 'audit',
+  SECURITY: 'security',
+  PERFORMANCE: 'performance',
+  BUSINESS: 'business',
+  SYSTEM: 'system'
+}
+
 const currentLevel = process.env.LOG_LEVEL
   ? LOG_LEVELS[process.env.LOG_LEVEL.toUpperCase()] || LOG_LEVELS.INFO
   : LOG_LEVELS.INFO
@@ -17,6 +25,17 @@ function formatMessage(level, message, meta = {}) {
     level,
     message,
     ...meta
+  })
+}
+
+function formatAuditMessage(action, userId, details = {}) {
+  return JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'INFO',
+    category: LOG_CATEGORIES.AUDIT,
+    action,
+    userId,
+    ...details
   })
 }
 
@@ -42,6 +61,24 @@ const logger = {
   debug(message, meta = {}) {
     if (currentLevel >= LOG_LEVELS.DEBUG) {
       console.log(formatMessage('DEBUG', message, meta))
+    }
+  },
+
+  audit(action, userId, details = {}) {
+    if (currentLevel >= LOG_LEVELS.INFO) {
+      console.log(formatAuditMessage(action, userId, details))
+    }
+  },
+
+  security(message, meta = {}) {
+    if (currentLevel >= LOG_LEVELS.INFO) {
+      console.log(formatMessage('SECURITY', `[SECURITY] ${message}`, { category: LOG_CATEGORIES.SECURITY, ...meta }))
+    }
+  },
+
+  performance(message, meta = {}) {
+    if (currentLevel >= LOG_LEVELS.INFO) {
+      console.log(formatMessage('PERFORMANCE', `[PERF] ${message}`, { category: LOG_CATEGORIES.PERFORMANCE, ...meta }))
     }
   }
 }
@@ -76,5 +113,6 @@ module.exports = {
   logger,
   generateRequestId,
   requestLogger,
-  LOG_LEVELS
+  LOG_LEVELS,
+  LOG_CATEGORIES
 }
